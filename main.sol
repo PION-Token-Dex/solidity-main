@@ -1,48 +1,13 @@
 // SPDX-License-Identifier: MIT
+import "contracts/main/SafeMath.sol";
+import "contracts/main/Context.sol";
+import "contracts/main/Ownable.sol";
 
 pragma solidity ^ 0.7 .0;
 
-library SafeMath {
 
-  function add(uint256 a, uint256 b) internal pure returns(uint256) {
-    uint256 c = a + b;
-    require(c >= a, "SafeMath: addition overflow");
-    return c;
-  }
 
-  function sub(uint256 a, uint256 b) internal pure returns(uint256) {
-    require(b <= a, "SafeMath: subtraction overflow");
-    return a - b;
-  }
 
-  function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns(uint256) {
-    require(b <= a, errorMessage);
-    return a - b;
-  }
-
-  function div(uint256 a, uint256 b) internal pure returns(uint256) {
-    require(b > 0, "SafeMath: division by zero");
-    return a / b;
-  }
-
-  function mul(uint256 a, uint256 b) internal pure returns(uint256) {
-    if (a == 0) return 0;
-    uint256 c = a * b;
-    require(c / a == b, "SafeMath: multiplication overflow");
-    return c;
-  }
-}
-
-abstract contract Context {
-  function _msgSender() internal view virtual returns(address payable) {
-    return msg.sender;
-  }
-
-  function _msgData() internal view virtual returns(bytes memory) {
-    this;
-    return msg.data;
-  }
-}
 
 interface IERC20 {
   function totalSupply() external view returns(uint256);
@@ -64,35 +29,7 @@ interface IERC20 {
   function claimTokens() external returns(bool);
 }
 
-abstract contract Ownable is Context {
-  address private _owner;
 
-  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-  constructor() {
-    address msgSender = _msgSender();
-    _owner = msgSender;
-    emit OwnershipTransferred(address(0), msgSender);
-  }
-
-  function owner() public view virtual returns(address) {
-    return _owner;
-  }
-  modifier onlyOwner() {
-    require(owner() == _msgSender(), "Ownable: caller is not the owner");
-    _;
-  }
-
-  function renounceOwnership() public virtual onlyOwner {
-    emit OwnershipTransferred(_owner, address(0));
-    _owner = address(0);
-  }
-
-  function transferOwnership(address newOwner) public virtual onlyOwner {
-    require(newOwner != address(0), "Ownable: new owner is the zero address");
-    emit OwnershipTransferred(_owner, newOwner);
-    _owner = newOwner;
-  }
-}
 
 abstract contract NewToken {
   function owner() public view virtual returns(address);
