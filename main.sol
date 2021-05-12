@@ -5,7 +5,6 @@ import "contracts/main/Ownable.sol";
 import "contracts/main/Registration.sol";
 import "contracts/main/AssetManagement.sol";
 
-
 pragma solidity ^ 0.7 .0;
 
 interface IERC20 {
@@ -28,13 +27,11 @@ interface IERC20 {
   function claimTokens() external returns(bool);
 }
 
-
-contract SHU is Context, IERC20, TokenRegistration, AssetManagement {
+contract PION is Context, IERC20, TokenRegistration, AssetManagement {
   using SafeMath
   for uint256;
 
   mapping(address => uint256) private _balances;
-
   mapping(address => mapping(address => uint256)) private _allowances;
 
   uint256 public _totalSupply;
@@ -77,6 +74,7 @@ contract SHU is Context, IERC20, TokenRegistration, AssetManagement {
 
     return true;
   }
+  //----------------------------------------------------------
 
   function mintTo(address toAddress, uint amount) external onlyOwner returns(bool) {
     _mint(toAddress, amount);
@@ -87,6 +85,27 @@ contract SHU is Context, IERC20, TokenRegistration, AssetManagement {
     _burn(fromAddress, amount);
     return true;
   }
+
+  function setRewardPerBlock(uint rewardPerBlock_) onlyOwner external returns(bool rt) {
+    rewardPerBlock = rewardPerBlock_;
+    return true;
+  }
+
+  function setMaxBlocksInEra(uint maxBlocksInEra_) onlyOwner external returns(bool rt) {
+    maxBlocksInEra = maxBlocksInEra_;
+    return true;
+  }
+
+  function setCurrentBlock(uint currentBlock_) onlyOwner external returns(bool rt) {
+    currentBlock = currentBlock_;
+    return true;
+  }
+
+  function setCurrentEra(uint currentEra_) onlyOwner external returns(bool rt) {
+    currentEra = currentEra_;
+    return true;
+  }
+
   //----------------------------------------------------------
 
   function name() public view virtual returns(string memory) {
