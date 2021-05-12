@@ -44,11 +44,11 @@ public class Exchange {
         return tokenIndexes.get(forToken).getTradeData(tradePlaces);
     }
 
-    public int getWithdrawBuyData(String forToken, String userAddress, int priceIndex, int amount) throws Exception {
+    public int getWithdrawBuyData(String forToken, String userAddress, int priceIndex) throws Exception {
         return tokenIndexes.get(forToken).getWithdrawAmountBuy(userAddress, priceIndex);
     }
 
-    public int getWithdrawSellData(String forToken, String userAddress, int priceIndex, int amount) throws Exception {
+    public int getWithdrawSellData(String forToken, String userAddress, int priceIndex) throws Exception {
         return tokenIndexes.get(forToken).getWithdrawAmountSell(userAddress, priceIndex);
     }
 
