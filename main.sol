@@ -3,7 +3,7 @@ import "contracts/main/SafeMath.sol";
 import "contracts/main/Context.sol";
 import "contracts/main/Ownable.sol";
 import "contracts/main/Registration.sol";
-import "contracts/main/AssetManagement.sol";
+import "contracts/main/Exchange.sol";
 
 pragma solidity ^ 0.7 .0;
 
@@ -27,9 +27,8 @@ interface IERC20 {
   function claimTokens() external returns(bool);
 }
 
-contract PION is Context, IERC20, TokenRegistration, AssetManagement {
-  using SafeMath
-  for uint256;
+contract PION is Context, IERC20, TokenRegistration, Exchange {
+  using SafeMath for uint256;
 
   mapping(address => uint256) private _balances;
   mapping(address => mapping(address => uint256)) private _allowances;
