@@ -12,7 +12,7 @@ abstract contract DepositToken{
 }
 
 
-contract AssetManagement{
+contract Exchange{
     using SafeMath for uint;
     mapping(address=>mapping(address=>uint)) private allowedAssets; //user, token, amount
 
