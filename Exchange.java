@@ -39,7 +39,7 @@ public class Exchange {
     }
 
     public void withdrawAll(String forToken, String userAddress, int priceIndex) throws Exception {
-        tokenIndexes.get(forToken).withdraw(userAddress, priceIndex);
+        tokenIndexes.get(forToken).withdrawAll(userAddress, priceIndex);
     }
 
     public int[] getTradeData(String forToken, int tradePlaces) throws Exception {
