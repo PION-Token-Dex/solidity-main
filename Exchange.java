@@ -36,7 +36,7 @@ public class Exchange {
         tokenIndexes.get(forToken).cancelAt(userAddress, priceIndex);
     }
 
-    public void withdrawFrom(String forToken, String userAddress, int priceIndex) throws Exception {
+    public void withdrawAll(String forToken, String userAddress, int priceIndex) throws Exception {
         tokenIndexes.get(forToken).withdraw(userAddress, priceIndex);
     }
 
