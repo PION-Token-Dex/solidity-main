@@ -34,6 +34,10 @@ contract Exchange {
   function setPionAddress(address pionAddress_) external {
     pionAddress = pionAddress_;
   }
+  
+  function setActiveIndexAddress(address activeIndexAddress_) external {
+    activeIndexesAddress = activeIndexAddress_;
+  }
 
   function addToken(address tokenAddress) private {
     tokenIndexes[tokenAddress] = ActiveIndexes(activeIndexesAddress);
