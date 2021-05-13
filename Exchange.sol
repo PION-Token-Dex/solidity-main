@@ -1,65 +1,93 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^ 0.7 .0;
 
-import "contracts/main/SafeMath.sol";
-
-
-abstract contract DepositToken{
+abstract contract TokenTransfer {
   function allowance(address owner, address spender) virtual external view returns(uint256);
   function transferFrom(address sender, address recipient, uint256 amount) virtual external returns(bool);
   function balanceOf(address account) virtual external view returns(uint256);
   function transfer(address recipient, uint256 amount) virtual external returns(bool);
 }
 
+abstract contract ActiveIndexes {
+  function buy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
+  function sell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
+  function cancelAt(address userAddress, uint priceIndex) public virtual returns(bool rt);
+  function getPriceIndexActivity(uint priceIndex) public virtual view returns(byte);
+  function withdrawAll(address userAddress, uint priceIndex) public virtual returns(bool rt);
+  function getTradeData(uint tradePlaces) public virtual view returns(uint[] memory rt);
+  function getWithdrawAmountBuy(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
+  function getWithdrawAmountSell(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
+  function currentToPionConversion(uint amount) external virtual view returns(uint rt);
+  function currentToTokenConversion(uint amount) external virtual view returns(uint rt);
+  function getCurrentBuyAmount() public virtual view returns(uint rt);
+  function getCurrentSellAmount() public virtual view returns(uint rt);
+}
 
-contract Exchange{
-    using SafeMath for uint;
-    mapping(address=>mapping(address=>uint)) private allowedAssets; //user, token, amount
+contract Exchange {
 
-    function depositTokens(address tokenAddress, uint amount) external returns(bool) {
-        DepositToken deptok = DepositToken(tokenAddress);
-        
-        uint balance = deptok.balanceOf(msg.sender);
-        require(balance>=amount);
-        
-        uint allowed = deptok.allowance(msg.sender, address(this));
-        require(allowed>=amount);
+  address private pionAddress;
+  address private activeIndexesAddress;
+  ActiveIndexes private null_activeIndexes;
 
-        deptok.transferFrom(msg.sender, address(this), amount);
-        refreshAllowed(tokenAddress);
-        allowedAssets[msg.sender][tokenAddress] = allowedAssets[msg.sender][tokenAddress].add(amount);
-        
-        return true;
-    }
-  
+  mapping(address => ActiveIndexes) private tokenIndexes;
 
-  function withdrawTokens(address tokenAddress, uint amount) external returns(bool) {
-        DepositToken deptok = DepositToken(tokenAddress);
-        refreshAllowed(tokenAddress);
-        uint allowed = allowedAssets[msg.sender][tokenAddress];
-        require(allowed>0 && allowed>=amount);
-
-        deptok.transfer(msg.sender, allowed); 
-
-        return true;
+  function setPionAddress(address pionAddress_) external {
+    pionAddress = pionAddress_;
   }
-  
-    function cancelExchanging(address tokenAddress) external returns(bool) {
-    //TODO!
-    }
 
-    function getTokensInExchange(address tokenAddress) public view returns (uint){
-      //this requires diving deep into exchange to see processed numbers.
-    //TODO!
-  } 
-  
-  function refreshAllowed(address tokenAddress) private returns(bool){
-      uint exchToks = getTokensInExchange(tokenAddress);
-      if(exchToks==0) return true;
-      allowedAssets[msg.sender][tokenAddress] = allowedAssets[msg.sender][tokenAddress].add(exchToks);
-      //TODO alter exchange tokens
-      //this requires diving deep into exchange to see processed numbers.
-    return true;
+  function addToken(address tokenAddress) private {
+    tokenIndexes[tokenAddress] = ActiveIndexes(activeIndexesAddress);
   }
-    
+
+  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external {
+    if (tokenIndexes[forToken] == null_activeIndexes) {
+      addToken(forToken);
+    }
+    tokenIndexes[forToken].buy(userAddress, priceIndex, amount);
+  }
+
+  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external {
+    if (tokenIndexes[forToken] == null_activeIndexes) {
+      addToken(forToken);
+    }
+    tokenIndexes[forToken].sell(userAddress, priceIndex, amount);
+  }
+
+  function cancelOrders(address forToken, address userAddress, uint priceIndex) external {
+    tokenIndexes[forToken].cancelAt(userAddress, priceIndex);
+  }
+
+  function withdrawAll(address forToken, address userAddress, uint priceIndex) external {
+    tokenIndexes[forToken].withdrawAll(userAddress, priceIndex);
+  }
+
+  function getTradeData(address forToken, uint tradePlaces) public view returns(uint[] memory rt) {
+    return tokenIndexes[forToken].getTradeData(tradePlaces);
+  }
+
+  function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    return tokenIndexes[forToken].getWithdrawAmountBuy(userAddress, priceIndex);
+  }
+
+  function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    return tokenIndexes[forToken].getWithdrawAmountSell(userAddress, priceIndex);
+  }
+  //--------------------------------
+
+  function token2TokenCalculate(address sellToken, address buyToken, uint amount) public view returns(uint rt) {
+    uint pions = tokenIndexes[sellToken].currentToPionConversion(amount);
+    uint buyTokens = tokenIndexes[buyToken].currentToTokenConversion(pions);
+    return buyTokens;
+  }
+
+  //circulating pions
+  function token2TokenGetPionAmount(address sellToken) public view returns(uint rt) {
+    return tokenIndexes[sellToken].getCurrentSellAmount();
+  }
+
+  //circulating tokens
+  function token2TokenGetTokenAmount(address buyToken) public view returns(uint rt) {
+    return tokenIndexes[buyToken].getCurrentBuyAmount();
+  }
+
 }
