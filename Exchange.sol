@@ -190,8 +190,11 @@ contract Exchanges is Ownable{
     }
     
     function cancelTradeAtIndex(address forToken, uint priceIndex, uint atExchangeVersion) external returns(bool rt){
+        require(forToken!=address(0), "ES 316, address(0)");
         require(msg.sender!=address(0), "ES 217, address(0)");
         require(priceIndex!=0, "ES 238, zero priceIndex");
+        require(atExchangeVersion<=currentExchangeVersion && atExchangeVersion>0, "ES 231, no exchangeVersion");
+        
         bool canceled = echangeVersion[atExchangeVersion].cancelOrders(forToken, msg.sender, priceIndex);
         require(canceled);
         //todo withdrawAll
@@ -199,6 +202,9 @@ contract Exchanges is Ownable{
         return true;
         
     }
+    
+    
+ 
     
     
 }
