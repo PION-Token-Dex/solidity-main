@@ -189,7 +189,14 @@ contract Exchanges is Ownable{
         return true;
     }
     
-    function cancelTradeAtIndex(address forToken, uint priceIndex, uint atExchangeVersion) external returns(bool rt){
+    
+        function cancelTradeAtIndex(address forToken, uint priceIndex) external returns(bool rt){
+            bool canceled = cancelTradeAtIndex(forToken, priceIndex, currentExchangeVersion);
+            require(canceled);
+            return true;
+        }
+    
+    function cancelTradeAtIndex(address forToken, uint priceIndex, uint atExchangeVersion) public returns(bool rt){
         require(forToken!=address(0), "ES 316, address(0)");
         require(msg.sender!=address(0), "ES 217, address(0)");
         require(priceIndex!=0, "ES 238, zero priceIndex");
