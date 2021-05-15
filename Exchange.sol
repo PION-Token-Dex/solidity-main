@@ -22,6 +22,8 @@ abstract contract ActiveIndexes {
   function currentToTokenConversion(uint amount) external virtual view returns(uint rt);
   function getCurrentBuyAmount() public virtual view returns(uint rt);
   function getCurrentSellAmount() public virtual view returns(uint rt);
+  function withdrawBuy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
+  function withdrawSell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
 }
 
 contract Exchange is Ownable{
@@ -72,6 +74,16 @@ contract Exchange is Ownable{
     tokenIndexes[forToken].withdrawAll(userAddress, priceIndex);
     return true;
   }
+  
+  function withdrawBuy(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt){
+    tokenIndexes[forToken].withdrawBuy(userAddress, priceIndex, amount);
+    return true;
+  }
+  
+  function withdrawSell(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt){
+    tokenIndexes[forToken].withdrawSell(userAddress, priceIndex, amount);
+    return true;
+  }
 
   function getTradeData(address forToken, uint tradePlaces) private view returns(uint[] memory rt) {
     return tokenIndexes[forToken].getTradeData(tradePlaces);
@@ -120,29 +132,38 @@ contract Exchanges is Ownable{
         return true;
     }
     
-    //only the current version can make the buy/sell
-    function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt){
+    function depositTokenToExchange(address tokenAddress, uint amount) private returns (bool rt){
+        TokenTransfer tok = TokenTransfer(tokenAddress);
+        require(tok.allowance(msg.sender, pionAdress)>=amount);
+        tok.transferFrom(msg.sender,pionAdress,amount);
+        return true;
+    }
+    function sendTokenToUser(address tokenAddress, address userAddress, uint amount) private returns(bool rt){
+        TokenTransfer tok = TokenTransfer(tokenAddress);
+        require(tok.balanceOf(userAddress)>=amount);
+        tok.transfer(userAddress, amount);
+        return true;
+    }
+
+    //only the current exchange version can make the buy/sell
+    function buyPion(address forToken, uint priceIndex, uint amount) external returns(bool rt){
         require(forToken!=address(0), "ES 316, address(0)");
-        require(userAddress!=address(0), "ES 217, address(0)");
+        require(msg.sender!=address(0), "ES 217, address(0)");
         require(priceIndex!=0, "ES 238, zero priceIndex");
         require(amount!=0, "ES 684, zero amount");
         
-        //todo deposit token then if true...
-        bool bought = echangeVersion[currentExchangeVersion].buyPion(forToken, userAddress, priceIndex, amount);
+        bool deposited = depositTokenToExchange(forToken, amount);
+        require(deposited);
+        bool bought = echangeVersion[currentExchangeVersion].buyPion(forToken, msg.sender, priceIndex, amount);
         require(bought);
         
-        uint withdrawBuyData = echangeVersion[currentExchangeVersion].getWithdrawBuyData(forToken, userAddress, priceIndex);
+        uint withdrawBuyData = echangeVersion[currentExchangeVersion].getWithdrawBuyData(forToken, msg.sender, priceIndex);
         if(withdrawBuyData>0){
-            bool withdrawn = echangeVersion[currentExchangeVersion].withdraw(forToken, userAddress, priceIndex, withdrawBuyData);
+            bool withdrawn = echangeVersion[currentExchangeVersion].withdrawBuy(forToken, msg.sender, priceIndex, withdrawBuyData);
             require(withdrawn);
-            //todo send PION to userAddress
+            sendTokenToUser(pionAdress, msg.sender, withdrawBuyData);         
         }
         return true;
     }
-    
-
-    
-    
-    
     
 }
