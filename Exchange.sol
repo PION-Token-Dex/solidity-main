@@ -1,169 +1,160 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^ 0.7 .0;
-import "contracts/main/Ownable.sol";
 
-abstract contract TokenTransfer {
-  function allowance(address owner, address spender) virtual external view returns(uint256);
-  function transferFrom(address sender, address recipient, uint256 amount) virtual external returns(bool);
-  function balanceOf(address account) virtual external view returns(uint256);
-  function transfer(address recipient, uint256 amount) virtual external returns(bool);
-}
+contract QA {
 
-abstract contract ActiveIndexes {
-  function buy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-  function sell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-  function cancelAt(address userAddress, uint priceIndex) public virtual returns(bool rt);
-  function getPriceIndexActivity(uint priceIndex) public virtual view returns(byte);
-  function withdrawAll(address userAddress, uint priceIndex) public virtual returns(bool rt);
-  function getTradeData(uint tradePlaces) public virtual view returns(uint[] memory rt);
-  function getWithdrawAmountBuy(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
-  function getWithdrawAmountSell(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
-  function currentToPionConversion(uint amount) external virtual view returns(uint rt);
-  function currentToTokenConversion(uint amount) external virtual view returns(uint rt);
-  function getCurrentBuyAmount() public virtual view returns(uint rt);
-  function getCurrentSellAmount() public virtual view returns(uint rt);
-  function withdrawBuy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-  function withdrawSell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-}
-
-contract Exchange is Ownable{
-
-  address private pionAddress;
-  address private activeIndexesAddress;
-  ActiveIndexes private null_activeIndexes;
-
-  mapping(address => ActiveIndexes) private tokenIndexes;
-  
-  constructor(address activeIndexesAddress_, address pionAddress_){
-      activeIndexesAddress = activeIndexesAddress_;
-      pionAddress = pionAddress_;
+  struct Bid {
+    address userAddress;
+    uint amount;
   }
 
-  function setPionAddress(address pionAddress_) private {
-    pionAddress = pionAddress_;
-  }
-  
-  function setActiveIndexAddress(address activeIndexAddress_) private {
-    activeIndexesAddress = activeIndexAddress_;
+  mapping(uint => Bid) private statusMap;
+  mapping(address => uint) private withdrawnAmount;
+
+  uint private currentId;
+  uint private lowestId;
+  uint private totalInactive;
+
+  function ask(address userAddress, uint amount) public {
+    require(amount > 0, "QA: 451, zero amount");
+    require(userAddress != address(0), "QA: 316, address zero");
+    statusMap[currentId] = Bid({
+      userAddress: userAddress,
+      amount: amount
+    });
+    ++currentId;
   }
 
-  function addToken(address tokenAddress) private {
-    tokenIndexes[tokenAddress] = ActiveIndexes(activeIndexesAddress);
-  }
+  function answer(uint amount) public {
+    require(amount > 0, "QA: 713, zero amount");
+    uint totalamt = getTotalActiveAmount();
 
-  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt){
-    if (tokenIndexes[forToken] == null_activeIndexes) {
-      addToken(forToken);
+    require(amount <= totalamt, "QA: 195, amount > totalamt");
+    require((totalamt - amount) > (totalamt / 100) || totalamt - amount == 0, "QA: 663, dusting");
+
+    if (amount == totalamt) {
+      lowestId = currentId;
+      totalInactive += amount;
+    } else {
+      answerSplitter(amount);
     }
-    tokenIndexes[forToken].buy(userAddress, priceIndex, amount);
+  }
+
+  function answerSplitter(uint amt) private {
+    uint amount = amt;
+    uint addToInactive = 0;
+    uint newLowestId = lowestId;
+    uint current = statusMap[newLowestId].amount;
+    uint y = 0;
+    while (amount != 0) {
+      require(y < 10000, "QA: 146, big loop");
+      if (current > amount) {
+        statusMap[newLowestId].amount = amount;
+        ask(statusMap[newLowestId].userAddress, current - amount);
+        addToInactive += amount;
+        amount = 0;
+      } else if (current == amount) {
+        addToInactive = amount;
+        amount = 0;
+      } else {
+        amount -= current;
+        addToInactive += current;
+      }
+      ++newLowestId;
+      current = statusMap[newLowestId].amount;
+      ++y;
+    }
+    totalInactive += addToInactive;
+    lowestId = newLowestId;
+  }
+
+  function cancelAll(address userAddress) external returns (bool tn){
+    require(userAddress != address(0), "QA: 212, address(0)");
+    uint active = getTotalUserActiveAmount(userAddress);
+    if (active == 0) {
+      return false;
+    }
+    processCancel(userAddress, active);
     return true;
   }
 
-  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) private {
-    if (tokenIndexes[forToken] == null_activeIndexes) {
-      addToken(forToken);
+  function processCancel(address userAddress, uint amount) private {
+    require(amount > 0, "QA: 156, zero cancel amount");
+    require(amount <= getTotalUserActiveAmount(userAddress), "QA: 987, amount greater than active");
+    answer(amount);
+  }
+
+  function withdrawAll(address userAddress) external {
+    require(userAddress != address(0), "QA: 486, address(0)");
+    uint inactive = getTotalUserInactiveAmount(userAddress);
+    if (inactive > 0) {
+      withdraw(userAddress, inactive);
     }
-    tokenIndexes[forToken].sell(userAddress, priceIndex, amount);
   }
 
-  function cancelOrders(address forToken, address userAddress, uint priceIndex) private {
-    tokenIndexes[forToken].cancelAt(userAddress, priceIndex);
+  function withdraw(address userAddress, uint amount) public {
+    require(amount > 0, "QA: 183, zero withdraw amount");
+    require(amount <= getTotalUserInactiveAmount(userAddress), "QA: 522, amount greater than active");
+    uint wamt = withdrawnAmount[userAddress];
+    wamt += amount;
+    withdrawnAmount[userAddress] = wamt;
+    totalInactive -= amount;
   }
 
-  function withdrawAll(address forToken, address userAddress, uint priceIndex) external returns(bool rt){
-    tokenIndexes[forToken].withdrawAll(userAddress, priceIndex);
-    return true;
-  }
-  
-  function withdrawBuy(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt){
-    tokenIndexes[forToken].withdrawBuy(userAddress, priceIndex, amount);
-    return true;
-  }
-  
-  function withdrawSell(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt){
-    tokenIndexes[forToken].withdrawSell(userAddress, priceIndex, amount);
-    return true;
-  }
-
-  function getTradeData(address forToken, uint tradePlaces) private view returns(uint[] memory rt) {
-    return tokenIndexes[forToken].getTradeData(tradePlaces);
-  }
-
-  function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) external view returns(uint rt) {
-    return tokenIndexes[forToken].getWithdrawAmountBuy(userAddress, priceIndex);
-  }
-
-  function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) private view returns(uint rt) {
-    return tokenIndexes[forToken].getWithdrawAmountSell(userAddress, priceIndex);
-  }
-  //--------------------------------
-
-  function token2TokenCalculate(address sellToken, address buyToken, uint amount) private view returns(uint rt) {
-    uint pions = tokenIndexes[sellToken].currentToPionConversion(amount);
-    uint buyTokens = tokenIndexes[buyToken].currentToTokenConversion(pions);
-    return buyTokens;
-  }
-
-  //circulating pions
-  function token2TokenGetPionAmount(address sellToken) private view returns(uint rt) {
-    return tokenIndexes[sellToken].getCurrentSellAmount();
-  }
-
-  //circulating tokens
-  function token2TokenGetTokenAmount(address buyToken) private view returns(uint rt) {
-    return tokenIndexes[buyToken].getCurrentBuyAmount();
-  }
-
-}
-
-contract Exchanges is Ownable{
-    
-    mapping(uint=>Exchange) private echangeVersion;
-    uint private currentExchangeVersion = 0;
-    address private pionAdress; 
-    
-    constructor(address pionAdress_){
-        pionAdress = pionAdress_;
+  function getTotalActiveAmount() public view returns(uint amt) {
+    uint ret = 0;
+    uint y = lowestId;
+    while (y < currentId) {
+      require(y < 10000, "QA: 934, big loop");
+      ret += statusMap[y].amount;
+      ++y;
     }
-    
-    function setNewExchange(address activeIndexesAddress) public onlyOwner returns(bool rt){
-        ++currentExchangeVersion;
-        echangeVersion[currentExchangeVersion] = new Exchange(activeIndexesAddress, pionAdress);
-        return true;
-    }
-    
-    function depositTokenToExchange(address tokenAddress, uint amount) private returns (bool rt){
-        TokenTransfer tok = TokenTransfer(tokenAddress);
-        require(tok.allowance(msg.sender, pionAdress)>=amount);
-        tok.transferFrom(msg.sender,pionAdress,amount);
-        return true;
-    }
-    function sendTokenToUser(address tokenAddress, address userAddress, uint amount) private returns(bool rt){
-        TokenTransfer tok = TokenTransfer(tokenAddress);
-        require(tok.balanceOf(userAddress)>=amount);
-        tok.transfer(userAddress, amount);
-        return true;
-    }
+    return ret;
+  }
 
-    //only the current exchange version can make the buy/sell
-    function buyPion(address forToken, uint priceIndex, uint amount) external returns(bool rt){
-        require(forToken!=address(0), "ES 316, address(0)");
-        require(msg.sender!=address(0), "ES 217, address(0)");
-        require(priceIndex!=0, "ES 238, zero priceIndex");
-        require(amount!=0, "ES 684, zero amount");
-        
-        bool deposited = depositTokenToExchange(forToken, amount);
-        require(deposited);
-        bool bought = echangeVersion[currentExchangeVersion].buyPion(forToken, msg.sender, priceIndex, amount);
-        require(bought);
-        
-        uint withdrawBuyData = echangeVersion[currentExchangeVersion].getWithdrawBuyData(forToken, msg.sender, priceIndex);
-        if(withdrawBuyData>0){
-            bool withdrawn = echangeVersion[currentExchangeVersion].withdrawBuy(forToken, msg.sender, priceIndex, withdrawBuyData);
-            require(withdrawn);
-            sendTokenToUser(pionAdress, msg.sender, withdrawBuyData);         
+  function getTotalUserActiveAmount(address userAddress) private view returns(uint amt) {
+    uint ret = 0;
+    uint y = lowestId;
+    while (y < currentId) {
+      require(y < 10000, "QA: 389, big loop");
+      if (statusMap[y].userAddress == userAddress) {
+        ret += statusMap[y].amount;
+      }
+      ++y;
+    }
+    return ret;
+  }
+
+  function getTotalUserInactiveAmount(address userAddress) public view returns(uint amtn) {
+    uint ret = 0;
+    uint trackAmt = totalInactive;
+    uint t = 0;
+    while (t < lowestId) {
+      require(t < 10000, "QA: 484, big loop");
+      if (userAddress == statusMap[t].userAddress) {
+        uint amt = statusMap[t].amount;
+        if (amt > trackAmt) {
+          ret += trackAmt;
+          break;
         }
-        return true;
+        ret += amt;
+        trackAmt -= amt;
+      }
+      ++t;
     }
-    
+
+    return ret;
+  }
+
+  function getQAStatus() external view returns(byte amt) {
+    uint inactive = getTotalInactiveAmount();
+    uint active = getTotalActiveAmount();
+    return (byte)(active == 0 && inactive == 0 ? 0 : active != 0 ? 1 : 2);
+  }
+
+  function getTotalInactiveAmount() private view returns(uint amt) {
+    return totalInactive;
+  }
+
 }
