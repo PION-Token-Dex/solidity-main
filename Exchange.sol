@@ -235,8 +235,8 @@ contract Exchanges is Ownable{
     
     function getActiveTradesAtIndex(){}
     function getProcessedTradesAtIndex(){}
-    
-    
+    function token2TokenSwap(){}
+
  
     
     
