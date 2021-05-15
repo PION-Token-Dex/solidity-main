@@ -190,13 +190,13 @@ contract Exchanges is Ownable{
     }
     
     
-        function cancelTradeAtIndex(address forToken, uint priceIndex) external returns(bool rt){
-            bool canceled = cancelTradeAtIndex(forToken, priceIndex, currentExchangeVersion);
+        function cancelAllTradesAtIndex(address forToken, uint priceIndex) external returns(bool rt){
+            bool canceled = cancelAllTradesAtIndex(forToken, priceIndex, currentExchangeVersion);
             require(canceled);
             return true;
         }
     
-    function cancelTradeAtIndex(address forToken, uint priceIndex, uint atExchangeVersion) public returns(bool rt){
+    function cancelAllTradesAtIndex(address forToken, uint priceIndex, uint atExchangeVersion) public returns(bool rt){
         require(forToken!=address(0), "ES 316, address(0)");
         require(msg.sender!=address(0), "ES 217, address(0)");
         require(priceIndex!=0, "ES 238, zero priceIndex");
@@ -207,8 +207,34 @@ contract Exchanges is Ownable{
         //todo withdrawAll
         //todo deposit index management!
         return true;
-        
     }
+    
+    
+    //todo check which one is a pion and which one is a token
+    function withdrawAllAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) public returns(bool rt){
+        require(forToken!=address(0), "ES 316, address(0)");
+        require(msg.sender!=address(0), "ES 217, address(0)");
+        require(priceIndex!=0, "ES 238, zero priceIndex");
+        require(atExchangeVersion<=currentExchangeVersion && atExchangeVersion>0, "ES 231, no exchangeVersion");
+        
+        //todo use getActiveTradesAtIndex and getProcessedTradesAtIndex to see whether to do any withdrawals, using require
+        
+        uint withdrawSellData = echangeVersion[currentExchangeVersion].getWithdrawSellData(forToken, msg.sender, priceIndex);
+        uint withdrawBuyData = echangeVersion[currentExchangeVersion].getWithdrawBuyData(forToken, msg.sender, priceIndex);
+        bool withdrawn = echangeVersion[atExchangeVersion].withdrawAll(forToken, userAddress, priceIndex);
+        require(withdrawn);
+        if(withdrawSellData>0){
+            sendTokenToUser(forToken, msg.sender, withdrawSellData); 
+        }
+        
+        if(withdrawBuyData>0){
+            sendTokenToUser(pionAdress, msg.sender, withdrawBuyData); 
+        }
+        return true;
+    }
+    
+    function getActiveTradesAtIndex(){}
+    function getProcessedTradesAtIndex(){}
     
     
  
