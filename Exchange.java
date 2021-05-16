@@ -183,7 +183,7 @@ contract Exchanges is Ownable {
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 768, not PION address");
     bool bought = buyPion(forToken, userAddress, priceIndex, amount, currentExchangeVersion);
-    require(bought);
+    require(bought, "ES: 618, not bought");
     return true;
   }
 
@@ -243,8 +243,7 @@ contract Exchanges is Ownable {
   function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 870, not PION address");
     bool canceled = cancelAllTradesAtIndex(forToken, userAddress, priceIndex, currentExchangeVersion);
-    require(canceled);
-    require(canceled, "ES 113, not 540");
+    require(canceled, "ES 113, not canceled");
     //TODO deposit index management!
     return true;
   }
@@ -270,8 +269,6 @@ contract Exchanges is Ownable {
     require(forToken != address(0), "ES 316, address(0)");
     require(priceIndex != 0, "ES 238, zero priceIndex");
     require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 231, no exchangeVersion");
-
-    //todo use getActiveTradesAtIndex and getProcessedTradesAtIndex to see whether to do any withdrawals, using require
 
     uint withdrawSellData = echangeVersion[currentExchangeVersion].getWithdrawSellData(forToken, userAddress, priceIndex);
     uint withdrawBuyData = echangeVersion[currentExchangeVersion].getWithdrawBuyData(forToken, userAddress, priceIndex);
