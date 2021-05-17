@@ -20,7 +20,7 @@ abstract contract ActiveIndexes {
   function currentToPionConversion(uint amount, uint priceIndex) public virtual view returns(uint rt);
   function currentToTokenConversion(uint amount, uint priceIndex) public virtual view returns(uint rt);
   function getTotalBuyAmount(uint priceIndex) public virtual view returns(uint rt);
-  function getTotalCurrentSellAmount(uint priceIndex) public virtual view returns(uint rt);
+  function getTotalSellAmount(uint priceIndex) public virtual view returns(uint rt);
   function withdrawBuy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
   function withdrawSell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
   function getCurrentIndex() external virtual view returns(uint rt);
