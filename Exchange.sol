@@ -4,45 +4,27 @@ import "contracts/main/Ownable.sol";
 
 abstract contract TokenTransfer {
   function allowance(address owner, address spender) virtual external view returns(uint256);
-
   function transferFrom(address sender, address recipient, uint256 amount) virtual external returns(bool);
-
   function balanceOf(address account) virtual external view returns(uint256);
-
   function transfer(address recipient, uint256 amount) virtual external returns(bool);
 }
 
 abstract contract ActiveIndexes {
   function buy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-
   function sell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-
   function cancelAt(address userAddress, uint priceIndex) public virtual returns(bool rt);
-
   function withdrawAll(address userAddress, uint priceIndex) public virtual returns(bool rt);
-
   function getTradeData(uint tradePlaces) public virtual view returns(uint[] memory rt);
-
   function getWithdrawAmountBuy(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
-
   function getWithdrawAmountSell(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
-
   function currentToPionConversion(uint amount) external virtual view returns(uint rt);
-
   function currentToTokenConversion(uint amount) external virtual view returns(uint rt);
-
   function getCurrentBuyAmount() public virtual view returns(uint rt);
-
   function getCurrentSellAmount() public virtual view returns(uint rt);
-
   function withdrawBuy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-
   function withdrawSell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-
   function getCurrentIndex() external virtual view returns(uint rt);
-
   function extraFunction(address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
-
 }
 
 contract Exchange is Ownable {
@@ -172,18 +154,15 @@ contract Exchanges is Ownable {
 
   //only allowed exchanges can make the buy/sell
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 768, not PION address");
     bool bought = buyPion(forToken, userAddress, priceIndex, amount, currentExchangeVersion);
     require(bought, "ES: 618, not bought");
     return true;
   }
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) public returns(bool rt) {
-    require(forToken != address(0), "ES 342, address(0)");
-    require(msg.sender == pionAdress, "ES: 926, not PION address");
-    require(priceIndex != 0, "ES 250, zero priceIndex");
-    require(amount != 0, "ES 114, zero amount");
-    require(allowedExchangeVersions[atExchangeVersion], "ES: 126, exchange not allowed");
+    require(msg.sender == pionAdress, "ES: 944, not PION address");
+    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 264, no exchangeVersion");
+    require(allowedExchangeVersions[atExchangeVersion], "ES: 954, exchange not allowed");
 
     bool deposited = depositTokenToExchange(forToken, userAddress, amount);
     require(deposited, "ES 508, not deposited");
@@ -198,18 +177,15 @@ contract Exchanges is Ownable {
   }
 
   function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 83, not PION address");
     bool sold = sellPion(forToken, userAddress, priceIndex, amount, currentExchangeVersion);
     require(sold, "ES 722, not sold");
     return true;
   }
 
   function sellPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) public returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 605, not PION address");
-    require(forToken != address(0), "ES 574, address(0)");
-    require(priceIndex != 0, "ES 641, zero priceIndex");
-    require(amount != 0, "ES 672, zero amount");
-    require(allowedExchangeVersions[atExchangeVersion], "ES: 78, exchange not allowed");
+    require(msg.sender == pionAdress, "ES: 813, not PION address");
+    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 976, no exchangeVersion");
+    require(allowedExchangeVersions[atExchangeVersion], "ES: 414, exchange not allowed");
 
     bool deposited = depositTokenToExchange(pionAdress, userAddress, amount);
     require(deposited, "ES 746, not deposited");
@@ -233,10 +209,6 @@ contract Exchanges is Ownable {
 
   function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) public returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 611, not PION address");
-    require(forToken != address(0), "ES 316, address(0)");
-    require(priceIndex != 0, "ES 238, zero priceIndex");
-    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 231, no exchangeVersion");
-    require(allowedExchangeVersions[atExchangeVersion], "ES: 370, exchange not allowed");
 
     bool canceled = echangeVersion[atExchangeVersion].cancelOrders(forToken, userAddress, priceIndex);
     require(canceled, "ES 113, not canceled");
@@ -250,10 +222,6 @@ contract Exchanges is Ownable {
   //todo check which one is a pion and which one is a token
   function withdrawAllAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) public returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 267, not PION address");
-    require(forToken != address(0), "ES 316, address(0)");
-    require(priceIndex != 0, "ES 238, zero priceIndex");
-    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 231, no exchangeVersion");
-    require(allowedExchangeVersions[atExchangeVersion], "ES: 518, exchange not allowed");
 
     uint withdrawSellData = echangeVersion[atExchangeVersion].getWithdrawSellData(forToken, userAddress, priceIndex);
     uint withdrawBuyData = echangeVersion[atExchangeVersion].getWithdrawBuyData(forToken, userAddress, priceIndex);
