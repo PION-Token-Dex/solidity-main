@@ -2,6 +2,7 @@
 pragma solidity ^ 0.7 .0;
 import "contracts/main/Ownable.sol";
 
+
 abstract contract TokenTransfer {
   function allowance(address owner, address spender) virtual external view returns(uint256);
   function transferFrom(address sender, address recipient, uint256 amount) virtual external returns(bool);
@@ -15,16 +16,22 @@ abstract contract ActiveIndexes {
   function cancelAt(address userAddress, uint priceIndex) public virtual returns(bool rt);
   function withdrawAll(address userAddress, uint priceIndex) public virtual returns(bool rt);
   function getTradeData(uint tradePlaces) public virtual view returns(uint[] memory rt);
-  function getWithdrawAmountBuy(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
-  function getWithdrawAmountSell(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
-  function currentToPionConversion(uint amount, uint priceIndex) public virtual view returns(uint rt);
-  function currentToTokenConversion(uint amount, uint priceIndex) public virtual view returns(uint rt);
-  function getTotalBuyAmount(uint priceIndex) public virtual view returns(uint rt);
-  function getTotalSellAmount(uint priceIndex) public virtual view returns(uint rt);
+  function getTradingNode(uint priceIndex) external virtual view returns(TradingNode rt);
+  function getTradingNode() external virtual view returns(TradingNode rt);
   function withdrawBuy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
   function withdrawSell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
   function getCurrentIndex() external virtual view returns(uint rt);
   function extraFunction(address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
+
+}
+
+abstract contract TradingNode {
+  function getWithdrawAmountBuy(address usrAddress) external virtual view returns(uint rt);
+  function getWithdrawAmountSell(address usrAddress) external virtual view returns(uint rt);
+  function toNative(uint nonNativeAmount) public virtual view returns(uint rt);
+  function toNonNative(uint nonNativeAmount) public virtual view returns(uint rt);
+  function getTotalBuyActiveAmount() external virtual view returns(uint rt);
+  function getTotalSellActiveAmount() external virtual view returns(uint rt);
 }
 
 contract Exchange is Ownable {
@@ -93,32 +100,31 @@ contract Exchange is Ownable {
   }
 
   function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) external view returns(uint rt) {
-    return tokenIndexes[forToken].getWithdrawAmountBuy(userAddress, priceIndex);
+    
+    return tokenIndexes[forToken].getTradingNode(priceIndex).getWithdrawAmountBuy(userAddress);
   }
 
   function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) external view returns(uint rt) {
-    return tokenIndexes[forToken].getWithdrawAmountSell(userAddress, priceIndex);
+    return tokenIndexes[forToken].getTradingNode(priceIndex).getWithdrawAmountSell(userAddress);
   }
   //--------------------------------
 
+
+//TODO use the active index current index!! (add to fields if not exist). Do this for all !!!!
   function token2TokenCalculate(address sellToken, address buyToken, uint amount) external view returns(uint rt) {
-    uint pions = tokenIndexes[sellToken].currentToPionConversion(amount);
-    uint buyTokens = tokenIndexes[buyToken].currentToTokenConversion(pions);
+    uint pions = tokenIndexes[sellToken].getTradingNode().toNative(amount);
+    uint buyTokens = tokenIndexes[buyToken].getTradingNode().toNonNative(pions); 
     return buyTokens;
   }
 
   //circulating pions
   function token2TokenGetPionAmount(address sellToken) external view returns(uint rt) {
-    return tokenIndexes[sellToken].getCurrentSellAmount();
+    return tokenIndexes[sellToken].getTradingNode().getTotalSellActiveAmount();
   }
 
   //circulating tokens
   function token2TokenGetTokenAmount(address buyToken) external view returns(uint rt) {
-    return tokenIndexes[buyToken].getCurrentBuyAmount();
-  }
-
-  function getCurrentBuyAmount(address buyToken) external view returns(uint rt) {
-    return tokenIndexes[buyToken].getCurrentBuyAmount();
+    return tokenIndexes[buyToken].getTradingNode().getTotalBuyActiveAmount();
   }
 
   function getCurrentIndex(address forToken) external view returns(uint rt) {
