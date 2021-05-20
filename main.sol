@@ -3,6 +3,7 @@ import "contracts/main/SafeMath.sol";
 import "contracts/main/Context.sol";
 import "contracts/main/Ownable.sol";
 import "contracts/main/Exchanges.sol";
+import "contracts/main/Registration.sol";
 
 pragma solidity ^ 0.7 .0;
 
@@ -40,6 +41,8 @@ contract PION is Context, IERC20, Ownable {
   string public _symbol;
   uint8 public _decimals;
   Exchanges private exchanges;
+  Registration private registration;
+
   //----------------------------------------------------------
   uint public rewardPerBlock = 50000000000000000000;
   uint public maxBlocksInEra = 210000;
@@ -53,6 +56,7 @@ contract PION is Context, IERC20, Ownable {
     _decimals = 18;
     _currentSupply = 0;
     exchanges = new Exchanges(address(this));
+    registration = new Registration(address(this));
   }
   //----------------------------------------------------------
 
@@ -98,6 +102,56 @@ contract PION is Context, IERC20, Ownable {
   }
 
   //--------------End Exhanges Calls----------------------------------------------
+  //--------------Start Registration Calls--------------------------------------------
+
+  
+function addTokenAddress(address tokenAddress) external returns(bool){
+return registration.addTokenAddress(tokenAddress);
+}
+function getAddressId(address tokenAddress) external view returns(uint){
+return registration.getAddressId(tokenAddress);
+}
+function getIdAddress(uint id) external view returns(address){
+return registration.getIdAddress( id);
+}
+function getId() external view returns(uint){
+return registration.getId();
+}
+function changeTokenName(address tokenAddress, string memory tokenName_) external returns(bool){
+return registration.changeTokenName(tokenAddress, tokenName_);
+}
+function changeTokenSymbol(address tokenAddress, string memory tokenSymbol_) external returns(bool){
+return registration.changeTokenSymbol(tokenAddress, tokenSymbol_);
+}
+function changeTokenLogo(address tokenAddress, string memory logoURL_) external returns(bool){
+return registration.changeTokenLogo(tokenAddress, logoURL_);
+}
+function changeTokenWeb(address tokenAddress, string memory webURL_) external returns(bool){
+return registration.changeTokenWeb(tokenAddress, webURL_);
+}
+function changeTokenSocial(address tokenAddress, string memory socialURL_) external returns(bool){
+return registration.changeTokenSocial(tokenAddress, socialURL_);
+}
+function changeTokenWhitepaper(address tokenAddress, string memory whitePaperURL_) external returns(bool){
+return registration.changeTokenWhitepaper(tokenAddress, whitePaperURL_);
+}
+function changeTokenDescription(address tokenAddress, string memory description_) external returns(bool){
+return registration.changeTokenDescription(tokenAddress, description_);
+}
+function changeExtra1(address tokenAddress, string memory extra) external returns(bool){
+return registration.changeExtra1(tokenAddress, extra);
+}
+function changeExtra2(address tokenAddress, string memory extra) external returns(bool){
+return registration.changeExtra2(tokenAddress, extra);
+}
+function changeExtra3(address tokenAddress, string memory extra) external returns(bool){
+return registration.changeExtra3(tokenAddress, extra);
+}
+function registerToken(address tokenAddress, string memory tokenName_, string memory tokenSymbol_, string memory logoURL_, string memory webURL_, 
+        string memory socialURL_, string memory whitePaperURL_, string memory description_) external returns(bool){
+return registration.registerToken(tokenAddress, tokenName_, tokenSymbol_, logoURL_, webURL_, socialURL_, whitePaperURL_, description_);
+}
+//--------------End Registration Calls--------------------------------------------
 
   function claimTokens() override external returns(bool) {
     claimTokensTo(msg.sender);
