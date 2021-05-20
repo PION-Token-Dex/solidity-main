@@ -121,18 +121,22 @@ contract PION is Context, IERC20, Ownable {
   }
 
   function changeTokenName(address tokenAddress, string memory tokenName_) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.changeTokenName(tokenAddress, tokenName_);
   }
 
   function changeTokenSymbol(address tokenAddress, string memory tokenSymbol_) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.changeTokenSymbol(tokenAddress, tokenSymbol_);
   }
 
   function changeTokenLogo(address tokenAddress, string memory logoURL_) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.changeTokenLogo(tokenAddress, logoURL_);
   }
 
   function changeTokenWeb(address tokenAddress, string memory webURL_) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.changeTokenWeb(tokenAddress, webURL_);
   }
 
@@ -141,28 +145,38 @@ contract PION is Context, IERC20, Ownable {
   }
 
   function changeTokenWhitepaper(address tokenAddress, string memory whitePaperURL_) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.changeTokenWhitepaper(tokenAddress, whitePaperURL_);
   }
 
   function changeTokenDescription(address tokenAddress, string memory description_) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.changeTokenDescription(tokenAddress, description_);
   }
 
   function changeExtra1(address tokenAddress, string memory extra) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.changeExtra1(tokenAddress, extra);
   }
 
   function changeExtra2(address tokenAddress, string memory extra) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.changeExtra2(tokenAddress, extra);
   }
 
   function changeExtra3(address tokenAddress, string memory extra) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.changeExtra3(tokenAddress, extra);
   }
 
   function registerToken(address tokenAddress, string memory tokenName_, string memory tokenSymbol_, string memory logoURL_, string memory webURL_,
     string memory socialURL_, string memory whitePaperURL_, string memory description_) external returns(bool) {
+    require(msg.sender == getContractOwner(tokenAddress));
     return registration.registerToken(tokenAddress, tokenName_, tokenSymbol_, logoURL_, webURL_, socialURL_, whitePaperURL_, description_);
+  }
+
+  function getContractOwner(address tokenAddress) public view returns(address rt) {
+    return registration.getContractOwner(tokenAddress);
   }
   //--------------End Registration Calls--------------------------------------------
 
