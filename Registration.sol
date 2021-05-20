@@ -13,6 +13,7 @@ contract TokenRegistration is Ownable {
 //User can register a token using the owner account, if and only if they can make a call to "owner()" function.
 //Otherwise, they have to contact the exchange owner for a listing.
 
+
   mapping(address => string) private tokenName;
   mapping(address => string) private tokenSymbol;
   mapping(address => string) private logoURL;
@@ -28,8 +29,13 @@ contract TokenRegistration is Ownable {
   mapping(address => uint) private addressToId;
   mapping(uint => address) private IdToAddress;
   uint private tokenId;
+  address private pionAdress;
+  
+  constructor(address pionAdress_) {
+    pionAdress = pionAdress_;
+  }
 
-  function addTokenAddress(address tokenAddress) internal returns(bool) {
+  function addTokenAddress(address tokenAddress) external returns(bool) {
       require(addressToId[tokenAddress]==0);
       ++tokenId;
       addressToId[tokenAddress] = tokenId;
@@ -37,22 +43,18 @@ contract TokenRegistration is Ownable {
       return true;
   }
   
-  function getAddressId(address tokenAddress) public view returns(uint) {
+  function getAddressId(address tokenAddress) external view returns(uint) {
     return addressToId[tokenAddress];
   }
   
-  function getIdAddress(uint id) public view returns(address) {
+  function getIdAddress(uint id) external view returns(address) {
     return IdToAddress[id];
   }
   
-  function getId() public view returns(uint) {
+  function getId() external view returns(uint) {
     return tokenId;
   }  
-
-  function getContractOwner(address tokenAddress) private view returns(address) {
-    NewToken newToken = NewToken(tokenAddress);
-    return newToken.owner();
-  }
+  
   function setFlag1(address tokenAddress, uint flag) external onlyOwner returns(bool) {
     flag1[tokenAddress] = flag;
     return true;
@@ -116,8 +118,8 @@ contract TokenRegistration is Ownable {
     return true;
   }
   
-
-  function registerToken(address tokenAddress, string memory tokenName_, string memory tokenSymbol_, string memory logoURL_, string memory webURL_, string memory socialURL_, string memory whitePaperURL_, string memory description_) external returns(bool) {
+  function registerToken(address tokenAddress, string memory tokenName_, string memory tokenSymbol_, string memory logoURL_, string memory webURL_, 
+                        string memory socialURL_, string memory whitePaperURL_, string memory description_) external returns(bool) {
     require((flag1[msg.sender]!=10000 && msg.sender==owner()) || msg.sender == getContractOwner(tokenAddress));
     tokenName[tokenAddress] = tokenName_;
     tokenSymbol[tokenAddress] = tokenSymbol_;
@@ -127,6 +129,11 @@ contract TokenRegistration is Ownable {
     whitePaperURL[tokenAddress] = whitePaperURL_;
     description[tokenAddress] = description_;
     return true;
+  }
+  
+ function getContractOwner(address tokenAddress) private view returns(address) {
+    NewToken newToken = NewToken(tokenAddress);
+    return newToken.owner();
   }
 
 }
