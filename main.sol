@@ -2,7 +2,6 @@
 import "contracts/main/SafeMath.sol";
 import "contracts/main/Context.sol";
 import "contracts/main/Ownable.sol";
-import "contracts/main/Registration.sol";
 import "contracts/main/Exchanges.sol";
 
 pragma solidity ^ 0.7 .0;
