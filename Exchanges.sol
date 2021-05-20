@@ -1,5 +1,10 @@
+// SPDX-License-Identifier: MIT
+
 import "contracts/main/Ownable.sol";
 import "contracts/main/Exchange.sol";
+
+pragma solidity ^ 0.7 .0;
+
 
 contract Exchanges is Ownable {
 
@@ -15,17 +20,17 @@ contract Exchanges is Ownable {
   //----START Used by main contract--------
 
   function isExchangeVersionAllowed(uint exchangeVersion) external view returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: ,not PION address");
+    require(msg.sender == pionAdress, "ES: 545, not PION address");
     return allowedExchangeVersions[exchangeVersion];
   }
 
   function getCurrentExchangeVersion() external view returns(uint rt) {
-    require(msg.sender == pionAdress, "ES: ,not PION address");
+    require(msg.sender == pionAdress, "ES: 463, not PION address");
     return currentExchangeVersion;
   }
 
   function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
-    require(msg.sender == pionAdress || msg.sender == address(this), "ES: ,not PION address");
+    require(msg.sender == pionAdress || msg.sender == address(this), "ES: 962, not PION address");
     TokenTransfer tok = TokenTransfer(tokenAddress);
     require(tok.allowance(userAddress, pionAdress) >= amount, "ES: 828, large amount");
     tok.transferFrom(userAddress, pionAdress, amount);
@@ -33,18 +38,14 @@ contract Exchanges is Ownable {
   }
 
   function sendTokenToUser(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
-    require(msg.sender == pionAdress || msg.sender == address(this), "ES: ,not PION address");
+    require(msg.sender == pionAdress || msg.sender == address(this), "ES: 953, not PION address");
     TokenTransfer tok = TokenTransfer(tokenAddress);
     require(tok.balanceOf(userAddress) >= amount, "ES: 573, large amount");
     tok.transfer(userAddress, amount);
     return true;
   }
 
-  function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: ,not PION address");
-    echangeVersion[atExchangeVersion].extraFunction(tokenAddress, inAddress, inUint);
-    return true;
-  }
+
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 944, not PION address");
@@ -136,6 +137,12 @@ contract Exchanges is Ownable {
     return true;
   }
 
+  function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) external returns(bool rt) {
+    require(msg.sender == pionAdress, "ES: ,not PION address");
+    echangeVersion[atExchangeVersion].extraFunction(tokenAddress, inAddress, inUint);
+    return true;
+  }
+  
   //----END Used by main contract--------
 
   function setNewExchange() public onlyOwner returns(bool rt) {
