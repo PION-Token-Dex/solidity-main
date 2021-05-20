@@ -29,10 +29,10 @@ contract Registration is Ownable {
   mapping(address => uint) private addressToId;
   mapping(uint => address) private IdToAddress;
   uint private tokenId;
-  address private pionAdress;
+  address private pionAddress;
   
-  constructor(address pionAdress_) {
-    pionAdress = pionAdress_;
+  constructor(address pionAddress_) {
+    pionAddress = pionAddress_;
   }
 
   function addTokenAddress(address tokenAddress) external returns(bool) {
@@ -61,66 +61,66 @@ contract Registration is Ownable {
   }
   
   function changeTokenName(address tokenAddress, string memory tokenName_) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     tokenName[tokenAddress] = tokenName_;
     return true;
   }
 
   function changeTokenSymbol(address tokenAddress, string memory tokenSymbol_) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     tokenSymbol[tokenAddress] = tokenSymbol_;
     return true;
   }
 
   function changeTokenLogo(address tokenAddress, string memory logoURL_) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     logoURL[tokenAddress] = logoURL_;
     return true;
   }
 
   function changeTokenWeb(address tokenAddress, string memory webURL_) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     webURL[tokenAddress] = webURL_;
     return true;
   }
 
   function changeTokenSocial(address tokenAddress, string memory socialURL_) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     socialURL[tokenAddress] = socialURL_;
     return true;
   }
 
   function changeTokenWhitepaper(address tokenAddress, string memory whitePaperURL_) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     whitePaperURL[tokenAddress] = whitePaperURL_;
     return true;
   }
 
   function changeTokenDescription(address tokenAddress, string memory description_) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     description[tokenAddress] = description_;
     return true;
   }
   
   function changeExtra1(address tokenAddress, string memory extra) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     extra1[tokenAddress] = extra;
     return true;
   }
     function changeExtra2(address tokenAddress, string memory extra) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     extra2[tokenAddress] = extra;
     return true;
   }
     function changeExtra3(address tokenAddress, string memory extra) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     extra3[tokenAddress] = extra;
     return true;
   }
   
   function registerToken(address tokenAddress, string memory tokenName_, string memory tokenSymbol_, string memory logoURL_, string memory webURL_, 
                         string memory socialURL_, string memory whitePaperURL_, string memory description_) external returns(bool) {
-    require(flag1[msg.sender]!=10000);
+    require(flag1[msg.sender]!=10000 && msg.sender==pionAddress);
     tokenName[tokenAddress] = tokenName_;
     tokenSymbol[tokenAddress] = tokenSymbol_;
     logoURL[tokenAddress] = logoURL_;
