@@ -1,212 +1,161 @@
 // SPDX-License-Identifier: MIT
-import "contracts/main/SafeMath.sol";
-import "contracts/main/Context.sol";
+
 import "contracts/main/Ownable.sol";
-import "contracts/main/Registration.sol";
 import "contracts/main/Exchange.sol";
 
 pragma solidity ^ 0.7 .0;
 
-interface IERC20 {
-  function totalSupply() external view returns(uint256);
 
-  function currentSupply() external view returns(uint256);
+contract Exchanges is Ownable {
 
-  function balanceOf(address account) external view returns(uint256);
+  mapping(uint => Exchange) private echangeVersion;
+  mapping(uint => bool) private allowedExchangeVersions;
+  uint public currentExchangeVersion = 0;
+  address public pionAdress;
 
-  function transfer(address recipient, uint256 amount) external returns(bool);
-
-  function transferFrom(address sender, address recipient, uint256 amount) external returns(bool);
-
-  function allowance(address owner, address spender) external view returns(uint256);
-
-  function approve(address spender, uint256 amount) external returns(bool);
-  event Transfer(address indexed from, address indexed to, uint256 value);
-  event Approval(address indexed owner, address indexed spender, uint256 value);
-
-  function claimTokens() external returns(bool);
-}
-
-contract PION is Context, IERC20, TokenRegistration, Exchange {
-  using SafeMath for uint256;
-
-  mapping(address => uint256) private _balances;
-  mapping(address => mapping(address => uint256)) private _allowances;
-
-  uint256 public _totalSupply;
-  uint256 public _currentSupply;
-
-  string public _name;
-  string public _symbol;
-  uint8 public _decimals;
-
-  //----------------------------------------------------------
-  uint public rewardPerBlock = 50000000000000000000;
-  uint public maxBlocksInEra = 210000;
-  uint public currentBlock = 0;
-  uint public currentEra = 1;
-  //----------------------------------------------------------
-
-  constructor() {
-    _name = "PION";
-    _symbol = "PION";
-    _decimals = 18;
-    _currentSupply = 0;
+  constructor(address pionAdress_) {
+    pionAdress = pionAdress_;
   }
-  //----------------------------------------------------------
 
-  function claimTokens() override external returns(bool) {
-    claimTokensTo(msg.sender);
+  //----START Used by main contract--------
+
+  function isExchangeVersionAllowed(uint exchangeVersion) external view returns(bool rt) {
+    require(msg.sender == pionAdress, "ES: 545, not PION address");
+    return allowedExchangeVersions[exchangeVersion];
+  }
+
+  function getCurrentExchangeVersion() external view returns(uint rt) {
+    require(msg.sender == pionAdress, "ES: 463, not PION address");
+    return currentExchangeVersion;
+  }
+
+  function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
+    require(msg.sender == pionAdress || msg.sender == address(this), "ES: 962, not PION address");
+    TokenTransfer tok = TokenTransfer(tokenAddress);
+    require(tok.allowance(userAddress, pionAdress) >= amount, "ES: 828, large amount");
+    tok.transferFrom(userAddress, pionAdress, amount);
     return true;
   }
 
-  function claimTokensTo(address toAddress) public returns(bool) {
-    if (currentBlock >= maxBlocksInEra) {
-      currentEra = currentEra.add(1);
-      currentBlock = 0;
-      rewardPerBlock = rewardPerBlock.div(2);
-      maxBlocksInEra = maxBlocksInEra.add(maxBlocksInEra.div(2));
-    } else {
-      currentBlock = currentBlock.add(1);
+  function sendTokenToUser(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
+    require(msg.sender == pionAdress || msg.sender == address(this), "ES: 953, not PION address");
+    TokenTransfer tok = TokenTransfer(tokenAddress);
+    require(tok.balanceOf(userAddress) >= amount, "ES: 573, large amount");
+    tok.transfer(userAddress, amount);
+    return true;
+  }
+
+
+
+  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
+    require(msg.sender == pionAdress, "ES: 944, not PION address");
+    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 264, no exchangeVersion");
+    require(allowedExchangeVersions[atExchangeVersion], "ES: 954, exchange not allowed");
+
+    bool deposited = depositTokenToExchange(forToken, userAddress, amount);
+    require(deposited, "ES 508, not deposited");
+    bool bought = echangeVersion[atExchangeVersion].buyPion(forToken, userAddress, priceIndex, amount);
+    require(bought, "ES 491, not bought");
+
+    bool withdrawn = withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
+    require(withdrawn, "ES 746, not withdrawn");
+
+    //TODO deposit index management!
+    return true;
+  }
+
+  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
+    require(msg.sender == pionAdress, "ES: 813, not PION address");
+    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 976, no exchangeVersion");
+    require(allowedExchangeVersions[atExchangeVersion], "ES: 414, exchange not allowed");
+
+    bool deposited = depositTokenToExchange(pionAdress, userAddress, amount);
+    require(deposited, "ES 746, not deposited");
+    bool sold = echangeVersion[atExchangeVersion].sellPion(forToken, userAddress, priceIndex, amount);
+    require(sold, "ES 572, not sold");
+
+    bool withdrawn = withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
+    require(withdrawn, "ES 257, not withdrawn");
+    return true;
+  }
+
+  function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) external returns(bool rt) {
+    require(msg.sender == pionAdress, "ES: 611, not PION address");
+    bool canceled = echangeVersion[atExchangeVersion].cancelOrders(forToken, userAddress, priceIndex);
+    require(canceled, "ES 113, not canceled");
+    bool withdrawn = withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
+    require(withdrawn, "ES 982, not withdrawn");
+    //todo deposit index management!
+    return true;
+  }
+
+  //todo check which one is a pion and which one is a token
+  function withdrawAllAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) public returns(bool rt) {
+    require(msg.sender == pionAdress || msg.sender == address(this), "ES: ,not PION address");
+    uint withdrawSellData = echangeVersion[atExchangeVersion].getWithdrawSellData(forToken, userAddress, priceIndex);
+    uint withdrawBuyData = echangeVersion[atExchangeVersion].getWithdrawBuyData(forToken, userAddress, priceIndex);
+    bool withdrawn = echangeVersion[atExchangeVersion].withdrawAll(forToken, userAddress, priceIndex);
+    require(withdrawn, "ES 997, not withdrawn");
+
+    if (withdrawSellData > 0) {
+      bool sent = sendTokenToUser(forToken, userAddress, withdrawSellData);
+      require(sent, "ES 271, not sent");
+
     }
-    _mint(toAddress, rewardPerBlock);
 
-    return true;
-  }
-  //----------------------------------------------------------
-
-  function mintTo(address toAddress, uint amount) external onlyOwner returns(bool) {
-    _mint(toAddress, amount);
-    return true;
-  }
-
-  function burnFrom(address fromAddress, uint amount) external onlyOwner returns(bool) {
-    _burn(fromAddress, amount);
+    if (withdrawBuyData > 0) {
+      bool sent = sendTokenToUser(pionAdress, userAddress, withdrawBuyData);
+      require(sent, "ES 991, not sent");
+    }
+    //TODO deposit index management!
     return true;
   }
 
-  function setRewardPerBlock(uint rewardPerBlock_) onlyOwner external returns(bool rt) {
-    rewardPerBlock = rewardPerBlock_;
+  function token2TokenSwap(address sellToken, address buyToken, address userAddress, uint atExchangeVersion, uint amount) external returns(bool rt) {
+    require(msg.sender == pionAdress, "ES: 690, not PION address");
+    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 231, no exchangeVersion");
+    require(allowedExchangeVersions[atExchangeVersion], "ES: 995, exchange not allowed");
+
+    uint tokensReturned = echangeVersion[atExchangeVersion].token2TokenCalculate(sellToken, buyToken, amount);
+    uint pionAmount = echangeVersion[atExchangeVersion].token2TokenGetPionAmount(sellToken);
+    uint buyTokenAmount = echangeVersion[atExchangeVersion].token2TokenGetTokenAmount(buyToken);
+
+    require(buyTokenAmount >= tokensReturned, "ES: 247, not enough tokens");
+    bool deposited = depositTokenToExchange(sellToken, userAddress, amount);
+    require(deposited, "ES 766, not deposited");
+
+    uint sellTokenIndex = echangeVersion[atExchangeVersion].getCurrentIndex(sellToken);
+    bool bought = echangeVersion[atExchangeVersion].buyPion(sellToken, userAddress, sellTokenIndex, amount);
+    require(bought, "ES 265, not bought");
+
+    uint buyTokenIndex = echangeVersion[atExchangeVersion].getCurrentIndex(buyToken);
+    bool sold = echangeVersion[atExchangeVersion].sellPion(buyToken, userAddress, buyTokenIndex, pionAmount);
+    require(sold, "ES 157, not sold");
+
+    bool withdrawn = withdrawAllAtIndex(buyToken, userAddress, buyTokenIndex, atExchangeVersion);
+    require(withdrawn, "ES 665, not withdrawn");
     return true;
   }
 
-  function setMaxBlocksInEra(uint maxBlocksInEra_) onlyOwner external returns(bool rt) {
-    maxBlocksInEra = maxBlocksInEra_;
+  function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) external returns(bool rt) {
+    require(msg.sender == pionAdress, "ES: ,not PION address");
+    echangeVersion[atExchangeVersion].extraFunction(tokenAddress, inAddress, inUint);
+    return true;
+  }
+  
+  //----END Used by main contract--------
+
+  function setNewExchange() public onlyOwner returns(bool rt) {
+    ++currentExchangeVersion;
+    echangeVersion[currentExchangeVersion] = new Exchange();
+    allowedExchangeVersions[currentExchangeVersion] = true;
     return true;
   }
 
-  function setCurrentBlock(uint currentBlock_) onlyOwner external returns(bool rt) {
-    currentBlock = currentBlock_;
+  //we want to be able to use multiple exchanges
+  function switchAllowExchangeVersion(uint exchangeVersion) public onlyOwner returns(bool rt) {
+    allowedExchangeVersions[exchangeVersion] = !allowedExchangeVersions[exchangeVersion];
     return true;
   }
 
-  function setCurrentEra(uint currentEra_) onlyOwner external returns(bool rt) {
-    currentEra = currentEra_;
-    return true;
-  }
-
-  //----------------------------------------------------------
-
-  function name() public view virtual returns(string memory) {
-    return _name;
-  }
-
-  function symbol() public view virtual returns(string memory) {
-    return _symbol;
-  }
-
-  function decimals() public view virtual returns(uint8) {
-    return _decimals;
-  }
-
-  function totalSupply() public view virtual override returns(uint256) {
-    return _totalSupply;
-  }
-
-  function currentSupply() public view virtual override returns(uint256) {
-    return _currentSupply;
-  }
-
-  function balanceOf(address account) public view virtual override returns(uint256) {
-    return _balances[account];
-  }
-
-  function transfer(address recipient, uint256 amount) public virtual override returns(bool) {
-    _transfer(_msgSender(), recipient, amount);
-    return true;
-  }
-
-  function allowance(address owner, address spender) public view virtual override returns(uint256) {
-    return _allowances[owner][spender];
-  }
-
-  function approve(address spender, uint256 amount) public virtual override returns(bool) {
-    _approve(_msgSender(), spender, amount);
-    return true;
-  }
-
-  function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns(bool) {
-    _transfer(sender, recipient, amount);
-    _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
-    return true;
-  }
-
-  function increaseAllowance(address spender, uint256 addedValue) public virtual returns(bool) {
-    _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
-    return true;
-  }
-
-  function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns(bool) {
-    _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
-    return true;
-  }
-
-  function _transfer(address sender, address recipient, uint256 amount) internal virtual {
-    require(sender != address(0), "ERC20: transfer from the zero address");
-    require(recipient != address(0), "ERC20: transfer to the zero address");
-
-    _beforeTokenTransfer(sender, recipient, amount);
-
-    _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
-    _balances[recipient] = _balances[recipient].add(amount);
-    emit Transfer(sender, recipient, amount);
-  }
-
-  function _mint(address account, uint256 amount) internal virtual {
-    require(account != address(0), "ERC20: mint to the zero address");
-
-    _beforeTokenTransfer(address(0), account, amount);
-
-    _totalSupply = _totalSupply.add(amount);
-    _currentSupply = _currentSupply.add(amount);
-
-    _balances[account] = _balances[account].add(amount);
-    emit Transfer(address(0), account, amount);
-  }
-
-  function _burn(address account, uint256 amount) internal virtual {
-    require(account != address(0), "ERC20: burn from the zero address");
-
-    _beforeTokenTransfer(account, address(0), amount);
-
-    _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
-    _totalSupply = _totalSupply.sub(amount);
-    _currentSupply = _currentSupply.sub(amount);
-
-    emit Transfer(account, address(0), amount);
-  }
-
-  function _approve(address owner, address spender, uint256 amount) internal virtual {
-    require(owner != address(0), "ERC20: approve from the zero address");
-    require(spender != address(0), "ERC20: approve to the zero address");
-
-    _allowances[owner][spender] = amount;
-    emit Approval(owner, spender, amount);
-  }
-
-  function _setupDecimals(uint8 decimals_) internal virtual {
-    _decimals = decimals_;
-  }
-
-  function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual {}
 }
