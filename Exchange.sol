@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
+import "contracts/main/Ownable.sol";
+
+
+
 pragma solidity ^ 0.7 .0;
 
 
-abstract contract TokenTransfer {
+abstract contract TokenTransfer is Ownable{
   function allowance(address owner, address spender) virtual external view returns(uint256);
   function transferFrom(address sender, address recipient, uint256 amount) virtual external returns(bool);
   function balanceOf(address account) virtual external view returns(uint256);
@@ -33,16 +37,15 @@ abstract contract TradingNode {
   function getTotalSellActiveAmount() external virtual view returns(uint rt);
 }
 
-contract Exchange {
+contract Exchange is Ownable{
 
-//   address private pionAddress;
   address private activeIndexesAddress;
   ActiveIndexes private null_activeIndexes;
 
   mapping(address => ActiveIndexes) private tokenIndexes;
 
 
-  function setActiveIndexAddress(address activeIndexAddress_) private {
+  function setActiveIndexAddress(address activeIndexAddress_) external onlyOwner {
     activeIndexesAddress = activeIndexAddress_;
   }
 
