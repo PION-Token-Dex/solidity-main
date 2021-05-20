@@ -8,7 +8,7 @@ abstract contract NewToken {
 }
 
 
-contract TokenRegistration is Ownable {
+contract Registration is Ownable {
     
 //User can register a token using the owner account, if and only if they can make a call to "owner()" function.
 //Otherwise, they have to contact the exchange owner for a listing.
