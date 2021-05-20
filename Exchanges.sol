@@ -1,7 +1,6 @@
 import "contracts/main/Ownable.sol";
 import "contracts/main/Exchange.sol";
 
-
 contract Exchanges is Ownable {
 
   mapping(uint => Exchange) private echangeVersion;
@@ -13,23 +12,41 @@ contract Exchanges is Ownable {
     pionAdress = pionAdress_;
   }
 
-  function getExchange(uint atExchangeVersion) external view returns(Exchange) {
-    require(msg.sender == pionAdress, "ES: 95, not PION address");
-    return echangeVersion[atExchangeVersion];
-  }
+  //----START Used by main contract--------
 
-  function isExchangeVersionAllowed(uint exchangeVersion) public view returns(bool rt) {
+  function isExchangeVersionAllowed(uint exchangeVersion) external view returns(bool rt) {
+    require(msg.sender == pionAdress, "ES: ,not PION address");
     return allowedExchangeVersions[exchangeVersion];
   }
 
-  //only allowed exchanges can make the buy/sell
-  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    bool bought = buyPion(forToken, userAddress, priceIndex, amount, currentExchangeVersion);
-    require(bought, "ES: 618, not bought");
+  function getCurrentExchangeVersion() external view returns(uint rt) {
+    require(msg.sender == pionAdress, "ES: ,not PION address");
+    return currentExchangeVersion;
+  }
+
+  function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
+    require(msg.sender == pionAdress || msg.sender == address(this), "ES: ,not PION address");
+    TokenTransfer tok = TokenTransfer(tokenAddress);
+    require(tok.allowance(userAddress, pionAdress) >= amount, "ES: 828, large amount");
+    tok.transferFrom(userAddress, pionAdress, amount);
     return true;
   }
 
-  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) public returns(bool rt) {
+  function sendTokenToUser(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
+    require(msg.sender == pionAdress || msg.sender == address(this), "ES: ,not PION address");
+    TokenTransfer tok = TokenTransfer(tokenAddress);
+    require(tok.balanceOf(userAddress) >= amount, "ES: 573, large amount");
+    tok.transfer(userAddress, amount);
+    return true;
+  }
+
+  function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) external returns(bool rt) {
+    require(msg.sender == pionAdress, "ES: ,not PION address");
+    echangeVersion[atExchangeVersion].extraFunction(tokenAddress, inAddress, inUint);
+    return true;
+  }
+
+  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 944, not PION address");
     require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 264, no exchangeVersion");
     require(allowedExchangeVersions[atExchangeVersion], "ES: 954, exchange not allowed");
@@ -46,13 +63,7 @@ contract Exchanges is Ownable {
     return true;
   }
 
-  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    bool sold = sellPion(forToken, userAddress, priceIndex, amount, currentExchangeVersion);
-    require(sold, "ES 722, not sold");
-    return true;
-  }
-
-  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) public returns(bool rt) {
+  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 813, not PION address");
     require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 976, no exchangeVersion");
     require(allowedExchangeVersions[atExchangeVersion], "ES: 414, exchange not allowed");
@@ -67,22 +78,10 @@ contract Exchanges is Ownable {
     return true;
   }
 
-  function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 972, not PION address");
-    require(allowedExchangeVersions[currentExchangeVersion], "ES: 991, exchange not allowed");
-
-    bool canceled = cancelAllTradesAtIndex(forToken, userAddress, priceIndex, currentExchangeVersion);
-    require(canceled, "ES 113, not canceled");
-    //TODO deposit index management!
-    return true;
-  }
-
-  function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) public returns(bool rt) {
+  function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) external returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 611, not PION address");
-
     bool canceled = echangeVersion[atExchangeVersion].cancelOrders(forToken, userAddress, priceIndex);
     require(canceled, "ES 113, not canceled");
-
     bool withdrawn = withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
     require(withdrawn, "ES 982, not withdrawn");
     //todo deposit index management!
@@ -91,8 +90,7 @@ contract Exchanges is Ownable {
 
   //todo check which one is a pion and which one is a token
   function withdrawAllAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) public returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 267, not PION address");
-
+    require(msg.sender == pionAdress || msg.sender == address(this), "ES: ,not PION address");
     uint withdrawSellData = echangeVersion[atExchangeVersion].getWithdrawSellData(forToken, userAddress, priceIndex);
     uint withdrawBuyData = echangeVersion[atExchangeVersion].getWithdrawBuyData(forToken, userAddress, priceIndex);
     bool withdrawn = echangeVersion[atExchangeVersion].withdrawAll(forToken, userAddress, priceIndex);
@@ -138,6 +136,8 @@ contract Exchanges is Ownable {
     return true;
   }
 
+  //----END Used by main contract--------
+
   function setNewExchange() public onlyOwner returns(bool rt) {
     ++currentExchangeVersion;
     echangeVersion[currentExchangeVersion] = new Exchange();
@@ -148,25 +148,6 @@ contract Exchanges is Ownable {
   //we want to be able to use multiple exchanges
   function switchAllowExchangeVersion(uint exchangeVersion) public onlyOwner returns(bool rt) {
     allowedExchangeVersions[exchangeVersion] = !allowedExchangeVersions[exchangeVersion];
-    return true;
-  }
-
-  function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) private returns(bool rt) {
-    TokenTransfer tok = TokenTransfer(tokenAddress);
-    require(tok.allowance(userAddress, pionAdress) >= amount, "ES: 828, large amount");
-    tok.transferFrom(userAddress, pionAdress, amount);
-    return true;
-  }
-
-  function sendTokenToUser(address tokenAddress, address userAddress, uint amount) private returns(bool rt) {
-    TokenTransfer tok = TokenTransfer(tokenAddress);
-    require(tok.balanceOf(userAddress) >= amount, "ES: 573, large amount");
-    tok.transfer(userAddress, amount);
-    return true;
-  }
-
-  function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) private returns(bool rt) {
-    echangeVersion[atExchangeVersion].extraFunction(tokenAddress, inAddress, inUint);
     return true;
   }
 
