@@ -30,17 +30,18 @@ function getTokenPriceIndexes(address userAddress, address tokenAddress, uint ma
     uint from = userIndexes[userAddress].lastActiveIdBottom;
     uint to = userIndexes[userAddress].lastId;
     uint t = 0;
+    uint cnt=0;
     for(;from<=to;from++){
+        if(cnt==10000) break;
         if(userIndexes[userAddress].tokenMap[from]==tokenAddress){
             ret[t] = userIndexes[userAddress].priceIndex[from];
             ++t;
             if(t==maxIndexes) break;
         }
+        ++cnt;
     }
     return ret;
 }
-
-
 
     
 }
