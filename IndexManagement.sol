@@ -7,7 +7,7 @@ struct Indexes{
     mapping(uint => address)  tokenMap; //id, tokenAddress
     mapping(uint=>uint)  priceIndex; //id, priceIndex
     uint lastId;
-    uint lastActiveId;
+    uint lastActiveIdBottom;
 }
 
 mapping(address=>Indexes) private userIndexes;  //user address, indexes
@@ -21,12 +21,12 @@ function addIndex(address userAddress, address tokenAddress, uint priceIndex) pr
 }
 
 function moveLastActiveIndex(address userAddress, uint toIndex) private {
-    userIndexes[userAddress].lastActiveId = toIndex;
+    userIndexes[userAddress].lastActiveIdBottom = toIndex;
 }
 
 function getTokenPriceIndexes(address userAddress, uint maxIndexes) private view returns(uint[] memory rt){
     uint[] memory ret = new uint[](maxIndexes);
-    uint from = userIndexes[userAddress].lastActiveId;
+    uint from = userIndexes[userAddress].lastActiveIdBottom;
     uint to = userIndexes[userAddress].lastId;
     uint t = 0;
     for(;from<=to;from++){
@@ -38,6 +38,5 @@ function getTokenPriceIndexes(address userAddress, uint maxIndexes) private view
     }
     return ret;
 }
-
     
 }
