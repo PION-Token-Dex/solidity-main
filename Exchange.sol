@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-import "contracts/main/Ownable.sol";
 
 pragma solidity ^ 0.7 .0;
 
@@ -46,7 +45,7 @@ contract IndexManagement {
 
 }
 
-abstract contract TokenTransfer is Ownable {
+abstract contract TokenTransfer {
   function allowance(address owner, address spender) virtual external view returns(uint256);
 
   function transferFrom(address sender, address recipient, uint256 amount) virtual external returns(bool);
@@ -95,26 +94,39 @@ abstract contract TradingNode {
   function getTotalSellActiveAmount() external virtual view returns(uint rt);
 }
 
-contract Exchange is Ownable, IndexManagement {
+contract Exchange is IndexManagement {
 
   address private activeIndexesAddress;
   ActiveIndexes private null_activeIndexes;
 
   mapping(address => ActiveIndexes) private tokenIndexes;
-  
-  function getExchangeAddress() public view returns(address rt){
-      return address(this);
+
+  address private exchangesAddress;
+
+  constructor(address exchangesAddress_) {
+    exchangesAddress = exchangesAddress_;
   }
 
-  function setActiveIndexAddress(address activeIndexAddress_) external onlyOwner {
+  function checkCall() private view {
+    require(msg.sender == exchangesAddress || msg.sender == address(this));
+  }
+
+  function getExchangeAddress() public view returns(address rt) {
+    return address(this);
+  }
+
+  function setActiveIndexAddress(address activeIndexAddress_) external {
+    checkCall();
     activeIndexesAddress = activeIndexAddress_;
   }
 
   function addToken(address tokenAddress) private {
+    checkCall();
     tokenIndexes[tokenAddress] = ActiveIndexes(activeIndexesAddress);
   }
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    checkCall();
     if (tokenIndexes[forToken] == null_activeIndexes) {
       addToken(forToken);
     }
@@ -123,6 +135,7 @@ contract Exchange is Ownable, IndexManagement {
   }
 
   function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    checkCall();
     if (tokenIndexes[forToken] == null_activeIndexes) {
       addToken(forToken);
     }
@@ -131,39 +144,47 @@ contract Exchange is Ownable, IndexManagement {
   }
 
   function cancelOrders(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
+    checkCall();
     tokenIndexes[forToken].cancelAt(userAddress, priceIndex);
     return true;
   }
 
   function withdrawAll(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
+    checkCall();
     tokenIndexes[forToken].withdrawAll(userAddress, priceIndex);
     return true;
   }
 
   function withdrawBuy(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    checkCall();
     tokenIndexes[forToken].withdrawBuy(userAddress, priceIndex, amount);
     return true;
   }
 
   function withdrawSell(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    checkCall();
     tokenIndexes[forToken].withdrawSell(userAddress, priceIndex, amount);
     return true;
   }
 
   function getTradeData(address forToken, uint tradePlaces) external view returns(uint[] memory rt) {
+    checkCall();
     return tokenIndexes[forToken].getTradeData(tradePlaces);
   }
 
-  function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) { //todo what can access?
+  function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    checkCall();
     return tokenIndexes[forToken].getTradingNode(priceIndex).getWithdrawAmountBuy(userAddress);
   }
 
-  function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) { //todo what can access?
+  function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    checkCall();
     return tokenIndexes[forToken].getTradingNode(priceIndex).getWithdrawAmountSell(userAddress);
   }
   //--------------------------------
 
   function token2TokenCalculate(address sellToken, address buyToken, uint amount) external view returns(uint rt) {
+    checkCall();
     uint pions = tokenIndexes[sellToken].getTradingNode().toNative(amount);
     uint buyTokens = tokenIndexes[buyToken].getTradingNode().toNonNative(pions);
     return buyTokens;
@@ -171,19 +192,23 @@ contract Exchange is Ownable, IndexManagement {
 
   //circulating pions
   function token2TokenGetPionAmount(address sellToken) external view returns(uint rt) {
+    checkCall();
     return tokenIndexes[sellToken].getTradingNode().getTotalSellActiveAmount();
   }
 
   //circulating tokens
   function token2TokenGetTokenAmount(address buyToken) external view returns(uint rt) {
+    checkCall();
     return tokenIndexes[buyToken].getTradingNode().getTotalBuyActiveAmount();
   }
 
   function getCurrentIndex(address forToken) external view returns(uint rt) {
+    checkCall();
     return tokenIndexes[forToken].getCurrentIndex();
   }
 
   function extraFunction(address tokenAddress, address[] memory inAddress, uint[] memory inUint) public returns(bool rt) {
+    checkCall();
     tokenIndexes[tokenAddress].extraFunction(inAddress, inUint);
     return true;
   }
@@ -206,12 +231,14 @@ contract Exchange is Ownable, IndexManagement {
   }
 
   function moveLastActiveIndex(address userAddress) public returns(bool rt) {
+    checkCall();
     uint toIndex = findNextWithdrawIndex(userAddress);
     moveLastActiveIndex(userAddress, toIndex);
     return true;
   }
 
   function addIndex(address userAddress, address tokenAddress, uint priceIndex) public returns(bool rt) {
+    checkCall();
     return addIndex_(userAddress, tokenAddress, priceIndex);
   }
 
