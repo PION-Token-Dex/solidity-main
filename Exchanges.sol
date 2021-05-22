@@ -14,6 +14,8 @@ contract Exchanges is Ownable {
 
   constructor(address pionAdress_) {
     pionAdress = pionAdress_;
+    allowedExchangeVersions[currentExchangeVersion] = true;
+    echangeVersion[currentExchangeVersion] = new Exchange(address(this));
   }
 
   //----START Used by main contract--------
