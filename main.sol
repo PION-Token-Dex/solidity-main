@@ -113,6 +113,10 @@ contract PION is Context, IERC20, Ownable {
   function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) external returns(bool rt) {
     return exchanges.extraFunction(atExchangeVersion, tokenAddress, inAddress, inUint);
   }
+  
+  function setNewExchange() external onlyOwner{
+      exchanges.setNewExchange();
+  }
 
   //--------------End Exhanges Calls----------------------------------------------
   //--------------Start Registration Calls--------------------------------------------
