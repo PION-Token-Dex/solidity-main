@@ -26,6 +26,12 @@ contract Exchanges is Ownable {
     return currentExchangeVersion;
   }
 
+  function getExchangeAddress(uint atExchangeVersion) public view returns(address rt){
+      return echangeVersion[atExchangeVersion].getExchangeAddress();
+  }
+
+
+
   function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
     requirePionOrThis();
     TokenTransfer tok = TokenTransfer(tokenAddress);
