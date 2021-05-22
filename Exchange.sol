@@ -101,6 +101,10 @@ contract Exchange is Ownable, IndexManagement {
   ActiveIndexes private null_activeIndexes;
 
   mapping(address => ActiveIndexes) private tokenIndexes;
+  
+  function getExchangeAddress() public view returns(address rt){
+      return address(this);
+  }
 
   function setActiveIndexAddress(address activeIndexAddress_) external onlyOwner {
     activeIndexesAddress = activeIndexAddress_;
