@@ -73,6 +73,10 @@ contract PION is Context, IERC20, Ownable {
     return exchanges.getExchangeAddress(atExchangeVersion);
   }
 
+  function setActiveIndexAddress(uint atExchangeVersion, address activeIndexAddress) external onlyOwner {
+    exchanges.setActiveIndexAddress(atExchangeVersion, activeIndexAddress);
+  }
+
   function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) external returns(bool rt) {
     return exchanges.depositTokenToExchange(tokenAddress, userAddress, amount);
   }
