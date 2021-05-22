@@ -42,20 +42,7 @@ contract Exchanges is Ownable {
     return true;
   }
 
-  function requireExchange(uint atExchangeVersion) private view {
-    require(msg.sender == pionAdress, "ES: 944, not PION address");
-    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 264, no exchangeVersion");
-    require(allowedExchangeVersions[atExchangeVersion], "ES: 954, exchange not allowed");
-  }
 
-  function registerIndexAdd(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) private {
-    require(echangeVersion[atExchangeVersion].addIndex(userAddress, forToken, priceIndex));
-    require(echangeVersion[atExchangeVersion].addIndex(userAddress, pionAdress, priceIndex));
-  }
-
-  function registerIndexWithdraw(address userAddress, uint atExchangeVersion) private {
-    require(echangeVersion[atExchangeVersion].moveLastActiveIndex(userAddress));
-  }
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
     requireExchange(atExchangeVersion);
@@ -135,6 +122,11 @@ contract Exchanges is Ownable {
     echangeVersion[atExchangeVersion].extraFunction(tokenAddress, inAddress, inUint);
     return true;
   }
+  
+  function getTokenPriceIndexes(uint atExchangeVersion, address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt){
+    require(msg.sender == pionAdress, "ES: 433, not PION address");
+    return echangeVersion[atExchangeVersion].getTokenPriceIndexes(userAddress, tokenAddress, maxIndexes);
+  }
 
   //----END Used by main contract--------
 
@@ -149,6 +141,23 @@ contract Exchanges is Ownable {
   function switchAllowExchangeVersion(uint exchangeVersion) public onlyOwner returns(bool rt) {
     allowedExchangeVersions[exchangeVersion] = !allowedExchangeVersions[exchangeVersion];
     return true;
+  }
+  
+    function requireExchange(uint atExchangeVersion) private view {
+    require(msg.sender == pionAdress, "ES: 944, not PION address");
+    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 264, no exchangeVersion");
+    require(allowedExchangeVersions[atExchangeVersion], "ES: 954, exchange not allowed");
+  }
+  
+  
+
+  function registerIndexAdd(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) private {
+    require(echangeVersion[atExchangeVersion].addIndex(userAddress, forToken, priceIndex));
+    require(echangeVersion[atExchangeVersion].addIndex(userAddress, pionAdress, priceIndex));
+  }
+
+  function registerIndexWithdraw(address userAddress, uint atExchangeVersion) private {
+    require(echangeVersion[atExchangeVersion].moveLastActiveIndex(userAddress));
   }
 
 }
