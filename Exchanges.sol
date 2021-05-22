@@ -47,20 +47,27 @@ contract Exchanges is Ownable {
 
 
 
+  function registerIndexAdd(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) private{
+    require(echangeVersion[atExchangeVersion].addIndex(userAddress, forToken, priceIndex));
+    require(echangeVersion[atExchangeVersion].addIndex(userAddress, pionAdress, priceIndex));
+  }
+  
+    function registerIndexWithdraw(address userAddress, uint atExchangeVersion) private{
+    require(echangeVersion[atExchangeVersion].moveLastActiveIndex(userAddress));
+    }
+
+
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 944, not PION address");
     require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 264, no exchangeVersion");
     require(allowedExchangeVersions[atExchangeVersion], "ES: 954, exchange not allowed");
+    
+    require(depositTokenToExchange(forToken, userAddress, amount));
+    require(echangeVersion[atExchangeVersion].buyPion(forToken, userAddress, priceIndex, amount));
+    registerIndexAdd(forToken, userAddress, priceIndex, atExchangeVersion);
+    require(withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion));
+    registerIndexWithdraw(userAddress, atExchangeVersion);
 
-    bool deposited = depositTokenToExchange(forToken, userAddress, amount);
-    require(deposited, "ES 508, not deposited");
-    bool bought = echangeVersion[atExchangeVersion].buyPion(forToken, userAddress, priceIndex, amount);
-    require(bought, "ES 491, not bought");
-
-    bool withdrawn = withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
-    require(withdrawn, "ES 746, not withdrawn");
-
-    //TODO deposit index management!
     return true;
   }
 
@@ -69,23 +76,18 @@ contract Exchanges is Ownable {
     require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 976, no exchangeVersion");
     require(allowedExchangeVersions[atExchangeVersion], "ES: 414, exchange not allowed");
 
-    bool deposited = depositTokenToExchange(pionAdress, userAddress, amount);
-    require(deposited, "ES 746, not deposited");
-    bool sold = echangeVersion[atExchangeVersion].sellPion(forToken, userAddress, priceIndex, amount);
-    require(sold, "ES 572, not sold");
-
-    bool withdrawn = withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
-    require(withdrawn, "ES 257, not withdrawn");
+    require(depositTokenToExchange(pionAdress, userAddress, amount));
+    require(echangeVersion[atExchangeVersion].sellPion(forToken, userAddress, priceIndex, amount));
+    registerIndexAdd(forToken, userAddress, priceIndex, atExchangeVersion);
+    registerIndexWithdraw(userAddress, atExchangeVersion);
     return true;
   }
 
   function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) external returns(bool rt) {
     require(msg.sender == pionAdress, "ES: 611, not PION address");
-    bool canceled = echangeVersion[atExchangeVersion].cancelOrders(forToken, userAddress, priceIndex);
-    require(canceled, "ES 113, not canceled");
-    bool withdrawn = withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
-    require(withdrawn, "ES 982, not withdrawn");
-    //todo deposit index management!
+    require(echangeVersion[atExchangeVersion].cancelOrders(forToken, userAddress, priceIndex));
+    require(withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion));
+    require(echangeVersion[atExchangeVersion].moveLastActiveIndex(userAddress));
     return true;
   }
 
@@ -94,20 +96,18 @@ contract Exchanges is Ownable {
     require(msg.sender == pionAdress || msg.sender == address(this), "ES: ,not PION address");
     uint withdrawSellData = echangeVersion[atExchangeVersion].getWithdrawSellData(forToken, userAddress, priceIndex);
     uint withdrawBuyData = echangeVersion[atExchangeVersion].getWithdrawBuyData(forToken, userAddress, priceIndex);
-    bool withdrawn = echangeVersion[atExchangeVersion].withdrawAll(forToken, userAddress, priceIndex);
-    require(withdrawn, "ES 997, not withdrawn");
+    require(echangeVersion[atExchangeVersion].withdrawAll(forToken, userAddress, priceIndex));
 
     if (withdrawSellData > 0) {
-      bool sent = sendTokenToUser(forToken, userAddress, withdrawSellData);
-      require(sent, "ES 271, not sent");
-
+      require(sendTokenToUser(forToken, userAddress, withdrawSellData));
     }
 
     if (withdrawBuyData > 0) {
-      bool sent = sendTokenToUser(pionAdress, userAddress, withdrawBuyData);
-      require(sent, "ES 991, not sent");
+      require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
     }
-    //TODO deposit index management!
+    
+    registerIndexWithdraw(userAddress, atExchangeVersion);
+    
     return true;
   }
 
@@ -121,24 +121,23 @@ contract Exchanges is Ownable {
     uint buyTokenAmount = echangeVersion[atExchangeVersion].token2TokenGetTokenAmount(buyToken);
 
     require(buyTokenAmount >= tokensReturned, "ES: 247, not enough tokens");
-    bool deposited = depositTokenToExchange(sellToken, userAddress, amount);
-    require(deposited, "ES 766, not deposited");
+    require(depositTokenToExchange(sellToken, userAddress, amount));
 
     uint sellTokenIndex = echangeVersion[atExchangeVersion].getCurrentIndex(sellToken);
-    bool bought = echangeVersion[atExchangeVersion].buyPion(sellToken, userAddress, sellTokenIndex, amount);
-    require(bought, "ES 265, not bought");
+    require(echangeVersion[atExchangeVersion].buyPion(sellToken, userAddress, sellTokenIndex, amount));
 
     uint buyTokenIndex = echangeVersion[atExchangeVersion].getCurrentIndex(buyToken);
-    bool sold = echangeVersion[atExchangeVersion].sellPion(buyToken, userAddress, buyTokenIndex, pionAmount);
-    require(sold, "ES 157, not sold");
+    require(echangeVersion[atExchangeVersion].sellPion(buyToken, userAddress, buyTokenIndex, pionAmount));
 
-    bool withdrawn = withdrawAllAtIndex(buyToken, userAddress, buyTokenIndex, atExchangeVersion);
-    require(withdrawn, "ES 665, not withdrawn");
+    require(withdrawAllAtIndex(buyToken, userAddress, buyTokenIndex, atExchangeVersion));
+    
+    registerIndexWithdraw(userAddress, atExchangeVersion);
+    
     return true;
   }
 
   function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: ,not PION address");
+    require(msg.sender == pionAdress, "ES: 433, not PION address");
     echangeVersion[atExchangeVersion].extraFunction(tokenAddress, inAddress, inUint);
     return true;
   }
