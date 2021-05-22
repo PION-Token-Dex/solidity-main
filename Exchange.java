@@ -1,6 +1,49 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^ 0.7 .0;
-import "contracts/main/Ownable.sol";
+
+contract IndexManagement {
+  struct Indexes {
+    mapping(uint => address) tokenMap; //id, tokenAddress
+    mapping(uint => uint) priceIndex; //id, priceIndex
+    uint lastId;
+    uint lastActiveIdBottom;
+  }
+
+  mapping(address => Indexes) internal userIndexes; //user address, indexes
+
+  function addIndex_(address userAddress, address tokenAddress, uint priceIndex) internal returns(bool rt) {
+    uint lastId = userIndexes[userAddress].lastId;
+    ++lastId;
+    userIndexes[userAddress].lastId = lastId;
+    userIndexes[userAddress].tokenMap[lastId] = tokenAddress;
+    userIndexes[userAddress].priceIndex[lastId] = priceIndex;
+    return true;
+  }
+
+  function moveLastActiveIndex(address userAddress, uint toIndex) internal {
+    userIndexes[userAddress].lastActiveIdBottom = toIndex;
+  }
+
+  function getTokenPriceIndexes(address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt) {
+    uint[] memory ret = new uint[](maxIndexes);
+    uint from = userIndexes[userAddress].lastActiveIdBottom;
+    uint to = userIndexes[userAddress].lastId;
+    uint t = 0;
+    uint cnt = 0;
+    for (; from <= to; from++) {
+      if (cnt == 10000) break;
+      if (userIndexes[userAddress].tokenMap[from] == tokenAddress) {
+        ret[t] = userIndexes[userAddress].priceIndex[from];
+        ++t;
+        if (t == maxIndexes) break;
+      }
+      ++cnt;
+    }
+    return ret;
+  }
+
+}
 
 abstract contract TokenTransfer {
   function allowance(address owner, address spender) virtual external view returns(uint256);
@@ -23,49 +66,67 @@ abstract contract ActiveIndexes {
 
   function getTradeData(uint tradePlaces) public virtual view returns(uint[] memory rt);
 
-  function getWithdrawAmountBuy(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
+  function getTradingNode(uint priceIndex) external virtual view returns(TradingNode rt);
 
-  function getWithdrawAmountSell(address usrAddress, uint priceIndex) external virtual view returns(uint rt);
-
-  function currentToPionConversion(uint amount) external virtual view returns(uint rt);
-
-  function currentToTokenConversion(uint amount) external virtual view returns(uint rt);
-
-  function getCurrentBuyAmount() public virtual view returns(uint rt);
-
-  function getCurrentSellAmount() public virtual view returns(uint rt);
+  function getTradingNode() external virtual view returns(TradingNode rt);
 
   function withdrawBuy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
 
   function withdrawSell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
+
+  function getCurrentIndex() external virtual view returns(uint rt);
+
+  function extraFunction(address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
+
 }
 
-contract Exchange is Ownable {
+abstract contract TradingNode {
+  function getWithdrawAmountBuy(address usrAddress) external virtual view returns(uint rt);
 
-  address private pionAddress;
+  function getWithdrawAmountSell(address usrAddress) external virtual view returns(uint rt);
+
+  function toNative(uint nonNativeAmount) public virtual view returns(uint rt);
+
+  function toNonNative(uint nonNativeAmount) public virtual view returns(uint rt);
+
+  function getTotalBuyActiveAmount() external virtual view returns(uint rt);
+
+  function getTotalSellActiveAmount() external virtual view returns(uint rt);
+}
+
+contract Exchange is IndexManagement {
+
   address private activeIndexesAddress;
   ActiveIndexes private null_activeIndexes;
 
   mapping(address => ActiveIndexes) private tokenIndexes;
 
-  constructor(address activeIndexesAddress_, address pionAddress_) {
-    activeIndexesAddress = activeIndexesAddress_;
-    pionAddress = pionAddress_;
+  address private exchangesAddress;
+
+  constructor(address exchangesAddress_) {
+    exchangesAddress = exchangesAddress_;
   }
 
-  function setPionAddress(address pionAddress_) private {
-    pionAddress = pionAddress_;
+  function checkCall() private view {
+    require(msg.sender == exchangesAddress || msg.sender == address(this));
   }
 
-  function setActiveIndexAddress(address activeIndexAddress_) private {
+  function getExchangeAddress() public view returns(address rt) {
+    return address(this);
+  }
+
+  function setActiveIndexAddress(address activeIndexAddress_) external {
+    checkCall();
     activeIndexesAddress = activeIndexAddress_;
   }
 
   function addToken(address tokenAddress) private {
+    checkCall();
     tokenIndexes[tokenAddress] = ActiveIndexes(activeIndexesAddress);
   }
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    checkCall();
     if (tokenIndexes[forToken] == null_activeIndexes) {
       addToken(forToken);
     }
@@ -74,6 +135,7 @@ contract Exchange is Ownable {
   }
 
   function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    checkCall();
     if (tokenIndexes[forToken] == null_activeIndexes) {
       addToken(forToken);
     }
@@ -82,220 +144,104 @@ contract Exchange is Ownable {
   }
 
   function cancelOrders(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
+    checkCall();
     tokenIndexes[forToken].cancelAt(userAddress, priceIndex);
     return true;
   }
 
   function withdrawAll(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
+    checkCall();
     tokenIndexes[forToken].withdrawAll(userAddress, priceIndex);
     return true;
   }
 
   function withdrawBuy(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    checkCall();
     tokenIndexes[forToken].withdrawBuy(userAddress, priceIndex, amount);
     return true;
   }
 
   function withdrawSell(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    checkCall();
     tokenIndexes[forToken].withdrawSell(userAddress, priceIndex, amount);
     return true;
   }
 
   function getTradeData(address forToken, uint tradePlaces) external view returns(uint[] memory rt) {
+    checkCall();
     return tokenIndexes[forToken].getTradeData(tradePlaces);
   }
 
-  function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) external view returns(uint rt) {
-    return tokenIndexes[forToken].getWithdrawAmountBuy(userAddress, priceIndex);
+  function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    checkCall();
+    return tokenIndexes[forToken].getTradingNode(priceIndex).getWithdrawAmountBuy(userAddress);
   }
 
-  function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) external view returns(uint rt) {
-    return tokenIndexes[forToken].getWithdrawAmountSell(userAddress, priceIndex);
+  function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    checkCall();
+    return tokenIndexes[forToken].getTradingNode(priceIndex).getWithdrawAmountSell(userAddress);
   }
   //--------------------------------
 
-  function token2TokenCalculate(address sellToken, address buyToken, uint amount) private view returns(uint rt) {
-    uint pions = tokenIndexes[sellToken].currentToPionConversion(amount);
-    uint buyTokens = tokenIndexes[buyToken].currentToTokenConversion(pions);
+  function token2TokenCalculate(address sellToken, address buyToken, uint amount) external view returns(uint rt) {
+    checkCall();
+    uint pions = tokenIndexes[sellToken].getTradingNode().toNative(amount);
+    uint buyTokens = tokenIndexes[buyToken].getTradingNode().toNonNative(pions);
     return buyTokens;
   }
 
   //circulating pions
-  function token2TokenGetPionAmount(address sellToken) private view returns(uint rt) {
-    return tokenIndexes[sellToken].getCurrentSellAmount();
+  function token2TokenGetPionAmount(address sellToken) external view returns(uint rt) {
+    checkCall();
+    return tokenIndexes[sellToken].getTradingNode().getTotalSellActiveAmount();
   }
 
   //circulating tokens
-  function token2TokenGetTokenAmount(address buyToken) private view returns(uint rt) {
-    return tokenIndexes[buyToken].getCurrentBuyAmount();
+  function token2TokenGetTokenAmount(address buyToken) external view returns(uint rt) {
+    checkCall();
+    return tokenIndexes[buyToken].getTradingNode().getTotalBuyActiveAmount();
   }
 
-  function getCurrentBuyAmount(address buyToken) external view returns(uint rt) {
-    return tokenIndexes[buyToken].getCurrentBuyAmount();
+  function getCurrentIndex(address forToken) external view returns(uint rt) {
+    checkCall();
+    return tokenIndexes[forToken].getCurrentIndex();
   }
 
-}
-
-contract Exchanges is Ownable {
-
-  mapping(uint => Exchange) private echangeVersion;
-  mapping(uint => bool) private allowedExchangeVersions;
-  uint public currentExchangeVersion = 0;
-  address public pionAdress;
-
-  constructor(address pionAdress_) {
-    pionAdress = pionAdress_;
-  }
-
-  function setNewExchange(address activeIndexesAddress) public onlyOwner returns(bool rt) {
-    ++currentExchangeVersion;
-    echangeVersion[currentExchangeVersion] = new Exchange(activeIndexesAddress, pionAdress);
-    allowedExchangeVersions[currentExchangeVersion] = true;
+  function extraFunction(address tokenAddress, address[] memory inAddress, uint[] memory inUint) public returns(bool rt) {
+    checkCall();
+    tokenIndexes[tokenAddress].extraFunction(inAddress, inUint);
     return true;
   }
 
-  //we want to be able to use multiple exchanges
-  function switchAllowExchangeVersion(uint exchangeVersion) public onlyOwner returns(bool rt) {
-    allowedExchangeVersions[exchangeVersion] = !allowedExchangeVersions[exchangeVersion];
-    return true;
-  }
+  //--------------------------------START INDEX MANAGEMENT-------------
 
-  function displayExchangeVersionAllow(uint exchangeVersion) public view returns(bool rt) {
-    return allowedExchangeVersions[exchangeVersion];
-  }
-
-  function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) private returns(bool rt) {
-    TokenTransfer tok = TokenTransfer(tokenAddress);
-    require(tok.allowance(userAddress, pionAdress) >= amount, "ES: 828, large amount");
-    tok.transferFrom(userAddress, pionAdress, amount);
-    return true;
-  }
-
-  function sendTokenToUser(address tokenAddress, address userAddress, uint amount) private returns(bool rt) {
-    TokenTransfer tok = TokenTransfer(tokenAddress);
-    require(tok.balanceOf(userAddress) >= amount, "ES: 573, large amount");
-    tok.transfer(userAddress, amount);
-    return true;
-  }
-
-  //only allowed exchanges can make the buy/sell
-
-  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 768, not PION address");
-    bool bought = buyPion(forToken, userAddress, priceIndex, amount, currentExchangeVersion);
-    require(bought, "ES: 618, not bought");
-    return true;
-  }
-
-  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint useExchangeVersion) public returns(bool rt) {
-    require(forToken != address(0), "ES 342, address(0)");
-    require(msg.sender == pionAdress, "ES: 926, not PION address");
-    require(priceIndex != 0, "ES 250, zero priceIndex");
-    require(amount != 0, "ES 114, zero amount");
-    require(allowedExchangeVersions[useExchangeVersion], "ES: 126, exchange not allowed");
-
-    bool deposited = depositTokenToExchange(forToken, userAddress, amount);
-    require(deposited, "ES 508, not deposited");
-    bool bought = echangeVersion[useExchangeVersion].buyPion(forToken, userAddress, priceIndex, amount);
-    require(bought, "ES 491, not bought");
-
-    uint withdrawBuyData = echangeVersion[useExchangeVersion].getWithdrawBuyData(forToken, userAddress, priceIndex);
-    if (withdrawBuyData > 0) {
-      bool withdrawn = echangeVersion[useExchangeVersion].withdrawBuy(forToken, userAddress, priceIndex, withdrawBuyData);
-      require(withdrawn, "ES 541, not withdrawn");
-      sendTokenToUser(pionAdress, userAddress, withdrawBuyData);
+  function findNextWithdrawIndex(address userAddress) private view returns(uint rt) {
+    uint ret = userIndexes[userAddress].lastActiveIdBottom;
+    uint to = userIndexes[userAddress].lastId;
+    for (; ret <= to; ret++) {
+      address forToken = userIndexes[userAddress].tokenMap[ret];
+      uint priceIndex = userIndexes[userAddress].priceIndex[ret];
+      uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
+      uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
+      if (withdrawBuyData > 0 || withdrawSellData > 0) {
+        break;
+      }
     }
-    //TODO deposit index management!
+    return ret;
+  }
+
+  function moveLastActiveIndex(address userAddress) public returns(bool rt) {
+    checkCall();
+    uint toIndex = findNextWithdrawIndex(userAddress);
+    moveLastActiveIndex(userAddress, toIndex);
     return true;
   }
 
-  //only allowed exchanges can make the buy/sell
-  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 83, not PION address");
-    bool sold = sellPion(forToken, userAddress, priceIndex, amount, currentExchangeVersion);
-    require(sold, "ES 722, not sold");
-    return true;
+  function addIndex(address userAddress, address tokenAddress, uint priceIndex) public returns(bool rt) {
+    checkCall();
+    return addIndex_(userAddress, tokenAddress, priceIndex);
   }
 
-  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount, uint useExchangeVersion) public returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 605, not PION address");
-    require(forToken != address(0), "ES 574, address(0)");
-    require(priceIndex != 0, "ES 641, zero priceIndex");
-    require(amount != 0, "ES 672, zero amount");
-    require(allowedExchangeVersions[useExchangeVersion], "ES: 78, exchange not allowed");
-
-    bool deposited = depositTokenToExchange(pionAdress, userAddress, amount);
-    require(deposited, "ES 746, not deposited");
-    bool sold = echangeVersion[useExchangeVersion].sellPion(forToken, userAddress, priceIndex, amount);
-    require(sold, "ES 572, not sold");
-
-    uint withdrawSellData = echangeVersion[useExchangeVersion].getWithdrawSellData(forToken, userAddress, priceIndex);
-    if (withdrawSellData > 0) {
-      bool withdrawn = echangeVersion[useExchangeVersion].withdrawSell(forToken, userAddress, priceIndex, withdrawSellData);
-      require(withdrawn, "ES 575, not withdrawn");
-
-      sendTokenToUser(pionAdress, userAddress, withdrawSellData);
-    }
-    //TODO deposit index management!
-    return true;
-  }
-
-  function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 870, not PION address");
-    bool canceled = cancelAllTradesAtIndex(forToken, userAddress, priceIndex, currentExchangeVersion);
-    require(canceled, "ES 113, not canceled");
-    //TODO deposit index management!
-    return true;
-  }
-
-  function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) public returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 611, not PION address");
-    require(forToken != address(0), "ES 316, address(0)");
-    require(priceIndex != 0, "ES 238, zero priceIndex");
-    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 231, no exchangeVersion");
-
-    bool canceled = echangeVersion[atExchangeVersion].cancelOrders(forToken, userAddress, priceIndex);
-    require(canceled, "ES 113, not canceled");
-
-    bool withdrawn = withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
-    require(withdrawn, "ES 982, not withdrawn");
-    //todo deposit index management!
-    return true;
-  }
-
-  //todo check which one is a pion and which one is a token
-  function withdrawAllAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) public returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 267, not PION address");
-    require(forToken != address(0), "ES 316, address(0)");
-    require(priceIndex != 0, "ES 238, zero priceIndex");
-    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 231, no exchangeVersion");
-
-    uint withdrawSellData = echangeVersion[currentExchangeVersion].getWithdrawSellData(forToken, userAddress, priceIndex);
-    uint withdrawBuyData = echangeVersion[currentExchangeVersion].getWithdrawBuyData(forToken, userAddress, priceIndex);
-    bool withdrawn = echangeVersion[atExchangeVersion].withdrawAll(forToken, userAddress, priceIndex);
-    require(withdrawn, "ES 997, not withdrawn");
-
-    if (withdrawSellData > 0) {
-      bool sent = sendTokenToUser(forToken, userAddress, withdrawSellData);
-      require(sent, "ES 271, not sent");
-
-    }
-
-    if (withdrawBuyData > 0) {
-      bool sent = sendTokenToUser(pionAdress, userAddress, withdrawBuyData);
-      require(sent, "ES 991, not sent");
-    }
-    //TODO deposit index management!
-    return true;
-  }
-
-  function getTradeData(address forToken, uint atExchangeVersion, uint tradePlaces) external view returns(uint[] memory rt) {
-    require(msg.sender == pionAdress, "ES: 994, not PION address");
-    require(forToken != address(0), "ES 818, address(0)");
-    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 231, no exchangeVersion");
-    return echangeVersion[currentExchangeVersion].getTradeData(forToken, tradePlaces);
-  }
-
-  //function token2TokenSwap(){}
+  //--------------------------------END INDEX MANAGEMENT---------------
 
 }
