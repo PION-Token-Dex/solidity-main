@@ -59,68 +59,68 @@ contract Registration is Ownable {
   }
 
   function changeTokenName(address tokenAddress, string memory tokenName_) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     tokenName[tokenAddress] = tokenName_;
     return true;
   }
 
   function changeTokenSymbol(address tokenAddress, string memory tokenSymbol_) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     tokenSymbol[tokenAddress] = tokenSymbol_;
     return true;
   }
 
   function changeTokenLogo(address tokenAddress, string memory logoURL_) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     logoURL[tokenAddress] = logoURL_;
     return true;
   }
 
   function changeTokenWeb(address tokenAddress, string memory webURL_) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     webURL[tokenAddress] = webURL_;
     return true;
   }
 
   function changeTokenSocial(address tokenAddress, string memory socialURL_) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     socialURL[tokenAddress] = socialURL_;
     return true;
   }
 
   function changeTokenWhitepaper(address tokenAddress, string memory whitePaperURL_) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     whitePaperURL[tokenAddress] = whitePaperURL_;
     return true;
   }
 
   function changeTokenDescription(address tokenAddress, string memory description_) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     description[tokenAddress] = description_;
     return true;
   }
 
   function changeExtra1(address tokenAddress, string memory extra) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     extra1[tokenAddress] = extra;
     return true;
   }
 
   function changeExtra2(address tokenAddress, string memory extra) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     extra2[tokenAddress] = extra;
     return true;
   }
 
   function changeExtra3(address tokenAddress, string memory extra) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     extra3[tokenAddress] = extra;
     return true;
   }
 
   function registerToken(address tokenAddress, string memory tokenName_, string memory tokenSymbol_, string memory logoURL_, string memory webURL_,
     string memory socialURL_, string memory whitePaperURL_, string memory description_) external returns(bool) {
-    requirePionOrFlag();
+    requirePionAndFlag();
     tokenName[tokenAddress] = tokenName_;
     tokenSymbol[tokenAddress] = tokenSymbol_;
     logoURL[tokenAddress] = logoURL_;
@@ -136,7 +136,7 @@ contract Registration is Ownable {
     return newToken.owner();
   }
 
-  function requirePionOrFlag() private view {
+  function requirePionAndFlag() private view {
     require(flag1[msg.sender] != 10000 && msg.sender == pionAddress);
   }
 
