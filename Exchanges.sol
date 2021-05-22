@@ -27,22 +27,20 @@ contract Exchanges is Ownable {
   }
 
   function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
-    require(msg.sender == pionAdress || msg.sender == address(this), "ES: 962, not PION address");
+    requirePionOrThis();
     TokenTransfer tok = TokenTransfer(tokenAddress);
-    require(tok.allowance(userAddress, pionAdress) >= amount, "ES: 828, large amount");
+    require(tok.allowance(userAddress, pionAdress) >= amount);
     tok.transferFrom(userAddress, pionAdress, amount);
     return true;
   }
 
   function sendTokenToUser(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
-    require(msg.sender == pionAdress || msg.sender == address(this), "ES: 953, not PION address");
+    requirePionOrThis();
     TokenTransfer tok = TokenTransfer(tokenAddress);
-    require(tok.balanceOf(userAddress) >= amount, "ES: 573, large amount");
+    require(tok.balanceOf(userAddress) >= amount);
     tok.transfer(userAddress, amount);
     return true;
   }
-
-
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
     requireExchange(atExchangeVersion);
@@ -67,7 +65,7 @@ contract Exchanges is Ownable {
   }
 
   function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 611, not PION address");
+    requirePionOrThis();
     require(echangeVersion[atExchangeVersion].cancelOrders(forToken, userAddress, priceIndex));
     require(withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion));
     require(echangeVersion[atExchangeVersion].moveLastActiveIndex(userAddress));
@@ -76,7 +74,7 @@ contract Exchanges is Ownable {
 
   //todo check which one is a pion and which one is a token
   function withdrawAllAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) public returns(bool rt) {
-    require(msg.sender == pionAdress || msg.sender == address(this), "ES: ,not PION address");
+    requirePionOrThis();
     uint withdrawSellData = echangeVersion[atExchangeVersion].getWithdrawSellData(forToken, userAddress, priceIndex);
     uint withdrawBuyData = echangeVersion[atExchangeVersion].getWithdrawBuyData(forToken, userAddress, priceIndex);
     require(echangeVersion[atExchangeVersion].withdrawAll(forToken, userAddress, priceIndex));
@@ -101,7 +99,7 @@ contract Exchanges is Ownable {
     uint pionAmount = echangeVersion[atExchangeVersion].token2TokenGetPionAmount(sellToken);
     uint buyTokenAmount = echangeVersion[atExchangeVersion].token2TokenGetTokenAmount(buyToken);
 
-    require(buyTokenAmount >= tokensReturned, "ES: 247, not enough tokens");
+    require(buyTokenAmount >= tokensReturned);
     require(depositTokenToExchange(sellToken, userAddress, amount));
 
     uint sellTokenIndex = echangeVersion[atExchangeVersion].getCurrentIndex(sellToken);
@@ -118,13 +116,13 @@ contract Exchanges is Ownable {
   }
 
   function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) external returns(bool rt) {
-    require(msg.sender == pionAdress, "ES: 433, not PION address");
+    requirePionOrThis();
     echangeVersion[atExchangeVersion].extraFunction(tokenAddress, inAddress, inUint);
     return true;
   }
-  
-  function getTokenPriceIndexes(uint atExchangeVersion, address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt){
-    require(msg.sender == pionAdress, "ES: 433, not PION address");
+
+  function getTokenPriceIndexes(uint atExchangeVersion, address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt) {
+    requirePionOrThis();
     return echangeVersion[atExchangeVersion].getTokenPriceIndexes(userAddress, tokenAddress, maxIndexes);
   }
 
@@ -137,19 +135,20 @@ contract Exchanges is Ownable {
     return true;
   }
 
-  //we want to be able to use multiple exchanges
   function switchAllowExchangeVersion(uint exchangeVersion) public onlyOwner returns(bool rt) {
     allowedExchangeVersions[exchangeVersion] = !allowedExchangeVersions[exchangeVersion];
     return true;
   }
-  
-    function requireExchange(uint atExchangeVersion) private view {
-    require(msg.sender == pionAdress, "ES: 944, not PION address");
-    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0, "ES 264, no exchangeVersion");
-    require(allowedExchangeVersions[atExchangeVersion], "ES: 954, exchange not allowed");
+
+  function requireExchange(uint atExchangeVersion) private view {
+    requirePionOrThis();
+    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0);
+    require(allowedExchangeVersions[atExchangeVersion]);
   }
   
-  
+  function requirePionOrThis() private view {
+    require(msg.sender == pionAdress || msg.sender == address(this));
+  }
 
   function registerIndexAdd(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) private {
     require(echangeVersion[atExchangeVersion].addIndex(userAddress, forToken, priceIndex));
