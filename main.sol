@@ -97,6 +97,11 @@ contract PION is Context, IERC20, Ownable {
     return exchanges.token2TokenSwap(sellToken, buyToken, userAddress, atExchangeVersion, amount);
   }
 
+  function getTokenPriceIndexes(uint atExchangeVersion, address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt) {
+    require(maxIndexes <= 2000);
+    return exchanges.getTokenPriceIndexes(atExchangeVersion, userAddress, tokenAddress, maxIndexes);
+  }
+
   function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) external returns(bool rt) {
     return exchanges.extraFunction(atExchangeVersion, tokenAddress, inAddress, inUint);
   }
