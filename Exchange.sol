@@ -1,9 +1,54 @@
 // SPDX-License-Identifier: MIT
 import "contracts/main/Ownable.sol";
 
-
-
 pragma solidity ^ 0.7 .0;
+
+
+contract IndexManagement{
+struct Indexes{
+    mapping(uint => address)  tokenMap; //id, tokenAddress
+    mapping(uint=>uint)  priceIndex; //id, priceIndex
+    uint lastId;
+    uint lastActiveIdBottom;
+}
+
+mapping(address=>Indexes) internal userIndexes;  //user address, indexes
+
+function addIndex(address userAddress, address tokenAddress, uint priceIndex) public returns(bool rt) {
+    uint lastId = userIndexes[userAddress].lastId;
+    ++lastId;
+    userIndexes[userAddress].lastId = lastId;
+    userIndexes[userAddress].tokenMap[lastId] = tokenAddress;
+    userIndexes[userAddress].priceIndex[lastId] = priceIndex;
+    return true;
+}
+
+function moveLastActiveIndex(address userAddress, uint toIndex) internal {
+    userIndexes[userAddress].lastActiveIdBottom = toIndex;
+}
+
+function getTokenPriceIndexes(address userAddress, address tokenAddress, uint maxIndexes) private view returns(uint[] memory rt){
+    uint[] memory ret = new uint[](maxIndexes);
+    uint from = userIndexes[userAddress].lastActiveIdBottom;
+    uint to = userIndexes[userAddress].lastId;
+    uint t = 0;
+    uint cnt=0;
+    for(;from<=to;from++){
+        if(cnt==10000) break;
+        if(userIndexes[userAddress].tokenMap[from]==tokenAddress){
+            ret[t] = userIndexes[userAddress].priceIndex[from];
+            ++t;
+            if(t==maxIndexes) break;
+        }
+        ++cnt;
+    }
+    return ret;
+}
+
+    
+}
+
+
 
 
 abstract contract TokenTransfer is Ownable{
@@ -37,7 +82,7 @@ abstract contract TradingNode {
   function getTotalSellActiveAmount() external virtual view returns(uint rt);
 }
 
-contract Exchange is Ownable{
+contract Exchange is Ownable, IndexManagement{
 
   address private activeIndexesAddress;
   ActiveIndexes private null_activeIndexes;
@@ -93,12 +138,11 @@ contract Exchange is Ownable{
     return tokenIndexes[forToken].getTradeData(tradePlaces);
   }
 
-  function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) external view returns(uint rt) {
-    
+  function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) { //todo what can access?
     return tokenIndexes[forToken].getTradingNode(priceIndex).getWithdrawAmountBuy(userAddress);
   }
 
-  function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) external view returns(uint rt) {
+  function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) { //todo what can access?
     return tokenIndexes[forToken].getTradingNode(priceIndex).getWithdrawAmountSell(userAddress);
   }
   //--------------------------------
@@ -129,6 +173,31 @@ contract Exchange is Ownable{
     tokenIndexes[tokenAddress].extraFunction(inAddress, inUint);
     return true;
   }
+  
+  //--------------------------------START INDEX MANAGEMENT-------------
+  
+   function findNextWithdrawIndex(address userAddress) private view returns(uint rt){
+      uint ret=userIndexes[userAddress].lastActiveIdBottom;
+      uint to = userIndexes[userAddress].lastId;
+      for(;ret<=to;ret++){
+          address forToken = userIndexes[userAddress].tokenMap[ret];
+          uint priceIndex = userIndexes[userAddress].priceIndex[ret];
+          uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
+          uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
+        if(withdrawBuyData>0 || withdrawSellData>0){break;}
+      }
+      return ret;
+  }
+  
+  function moveLastActiveIndex(address userAddress) public returns(bool rt){
+      uint toIndex = findNextWithdrawIndex(userAddress);
+      moveLastActiveIndex(userAddress, toIndex);
+      return true;
+  }
+  
+  
+  
+  
+  //--------------------------------END INDEX MANAGEMENT---------------
 
 }
-
