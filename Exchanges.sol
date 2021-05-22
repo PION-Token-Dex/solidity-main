@@ -26,11 +26,14 @@ contract Exchanges is Ownable {
     return currentExchangeVersion;
   }
 
-  function getExchangeAddress(uint atExchangeVersion) public view returns(address rt){
-      return echangeVersion[atExchangeVersion].getExchangeAddress();
+  function getExchangeAddress(uint atExchangeVersion) public view returns(address rt) {
+    return echangeVersion[atExchangeVersion].getExchangeAddress();
   }
 
-
+  function setActiveIndexAddress(uint atExchangeVersion, address activeIndexAddress) external {
+    requirePionOrThis();
+    echangeVersion[atExchangeVersion].setActiveIndexAddress(activeIndexAddress);
+  }
 
   function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
     requirePionOrThis();
@@ -136,7 +139,7 @@ contract Exchanges is Ownable {
 
   function setNewExchange() public onlyOwner returns(bool rt) {
     ++currentExchangeVersion;
-    echangeVersion[currentExchangeVersion] = new Exchange();
+    echangeVersion[currentExchangeVersion] = new Exchange(address(this));
     allowedExchangeVersions[currentExchangeVersion] = true;
     return true;
   }
@@ -151,7 +154,7 @@ contract Exchanges is Ownable {
     require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0);
     require(allowedExchangeVersions[atExchangeVersion]);
   }
-  
+
   function requirePionOrThis() private view {
     require(msg.sender == pionAdress || msg.sender == address(this));
   }
