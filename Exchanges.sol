@@ -45,10 +45,10 @@ contract Exchanges is Ownable {
     return address(this);
   }
 
-//   function setActiveIndexAddress(uint atExchangeVersion, address activeIndexAddress) external {
-//     requirePionOrThis();
-//     echangeVersion[atExchangeVersion].setActiveIndexAddress(activeIndexAddress);
-//   }
+  function setActiveIndexAddress(uint atExchangeVersion, address activeIndexAddress) external {
+    requirePionOrThis();
+    echangeVersion[atExchangeVersion].setActiveIndexAddress(activeIndexAddress);
+  }
 
   function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
     requirePionOrThis();
