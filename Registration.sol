@@ -107,68 +107,68 @@ contract Registration is Ownable {
   }
 
   function changeTokenName(address tokenAddress, string memory tokenName_) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     tokenName[tokenAddress] = tokenName_;
     return true;
   }
 
   function changeTokenSymbol(address tokenAddress, string memory tokenSymbol_) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     tokenSymbol[tokenAddress] = tokenSymbol_;
     return true;
   }
 
   function changeTokenLogo(address tokenAddress, string memory logoURL_) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     logoURL[tokenAddress] = logoURL_;
     return true;
   }
 
   function changeTokenWeb(address tokenAddress, string memory webURL_) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     webURL[tokenAddress] = webURL_;
     return true;
   }
 
   function changeTokenSocial(address tokenAddress, string memory socialURL_) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     socialURL[tokenAddress] = socialURL_;
     return true;
   }
 
   function changeTokenWhitepaper(address tokenAddress, string memory whitePaperURL_) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     whitePaperURL[tokenAddress] = whitePaperURL_;
     return true;
   }
 
   function changeTokenDescription(address tokenAddress, string memory description_) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     description[tokenAddress] = description_;
     return true;
   }
 
   function changeExtra1(address tokenAddress, string memory extra) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     extra1[tokenAddress] = extra;
     return true;
   }
 
   function changeExtra2(address tokenAddress, string memory extra) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     extra2[tokenAddress] = extra;
     return true;
   }
 
   function changeExtra3(address tokenAddress, string memory extra) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     extra3[tokenAddress] = extra;
     return true;
   }
 
   function registerToken(address tokenAddress, string memory tokenName_, string memory tokenSymbol_, string memory logoURL_, string memory webURL_,
     string memory socialURL_, string memory whitePaperURL_, string memory description_) external returns(bool) {
-    requireFlag();
+    requireFlag(tokenAddress);
     tokenName[tokenAddress] = tokenName_;
     tokenSymbol[tokenAddress] = tokenSymbol_;
     logoURL[tokenAddress] = logoURL_;
@@ -180,8 +180,8 @@ contract Registration is Ownable {
   }
 
   //---REQUIRED
-  function requireFlag() private view {
-    require(flag1[msg.sender] != 10000);
+  function requireFlag(address tokenAddress) private view {
+    require((flag1[msg.sender] != 10000 && msg.sender==getContractOwner(tokenAddress)) || msg.sender==owner());
   }
 
 }
