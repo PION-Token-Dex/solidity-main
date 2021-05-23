@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import "contracts/main/Ownable.sol";
+import "Ownable.sol";
 
 pragma solidity ^ 0.7 .0;
 
@@ -7,6 +7,7 @@ abstract contract NewToken {
   function owner() public view virtual returns(address);
 }
 
+//this contract is independent of PION token, to save the GAS prices
 contract Registration is Ownable {
 
   //User can register a token using the owner account, if and only if they can make a call to "owner()" function.
@@ -27,12 +28,8 @@ contract Registration is Ownable {
   mapping(address => uint) private addressToId;
   mapping(uint => address) private IdToAddress;
   uint private tokenId;
-  address private pionAddress;
-
-  constructor(address pionAddress_) {
-    pionAddress = pionAddress_;
-  }
-
+ 
+ 
   function addTokenAddress(address tokenAddress) external returns(bool) {
     require(addressToId[tokenAddress] == 0);
     ++tokenId;
@@ -59,68 +56,68 @@ contract Registration is Ownable {
   }
 
   function changeTokenName(address tokenAddress, string memory tokenName_) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     tokenName[tokenAddress] = tokenName_;
     return true;
   }
 
   function changeTokenSymbol(address tokenAddress, string memory tokenSymbol_) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     tokenSymbol[tokenAddress] = tokenSymbol_;
     return true;
   }
 
   function changeTokenLogo(address tokenAddress, string memory logoURL_) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     logoURL[tokenAddress] = logoURL_;
     return true;
   }
 
   function changeTokenWeb(address tokenAddress, string memory webURL_) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     webURL[tokenAddress] = webURL_;
     return true;
   }
 
   function changeTokenSocial(address tokenAddress, string memory socialURL_) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     socialURL[tokenAddress] = socialURL_;
     return true;
   }
 
   function changeTokenWhitepaper(address tokenAddress, string memory whitePaperURL_) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     whitePaperURL[tokenAddress] = whitePaperURL_;
     return true;
   }
 
   function changeTokenDescription(address tokenAddress, string memory description_) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     description[tokenAddress] = description_;
     return true;
   }
 
   function changeExtra1(address tokenAddress, string memory extra) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     extra1[tokenAddress] = extra;
     return true;
   }
 
   function changeExtra2(address tokenAddress, string memory extra) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     extra2[tokenAddress] = extra;
     return true;
   }
 
   function changeExtra3(address tokenAddress, string memory extra) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     extra3[tokenAddress] = extra;
     return true;
   }
 
   function registerToken(address tokenAddress, string memory tokenName_, string memory tokenSymbol_, string memory logoURL_, string memory webURL_,
     string memory socialURL_, string memory whitePaperURL_, string memory description_) external returns(bool) {
-    requirePionAndFlag();
+    requireFlag();
     tokenName[tokenAddress] = tokenName_;
     tokenSymbol[tokenAddress] = tokenSymbol_;
     logoURL[tokenAddress] = logoURL_;
@@ -136,8 +133,8 @@ contract Registration is Ownable {
     return newToken.owner();
   }
 
-  function requirePionAndFlag() private view {
-    require(flag1[msg.sender] != 10000 && msg.sender == pionAddress);
+  function requireFlag() private view {
+    require(flag1[msg.sender] != 10000);
   }
 
 }
