@@ -3,7 +3,6 @@ import "SafeMath.sol";
 import "Context.sol";
 import "Ownable.sol";
 import "Exchanges.sol";
-import "Registration.sol";
 
 pragma solidity ^ 0.7 .0;
 
