@@ -28,8 +28,7 @@ contract Registration is Ownable {
   mapping(address => uint) private addressToId;
   mapping(uint => address) private IdToAddress;
   uint private tokenId;
- 
- 
+
   function addTokenAddress(address tokenAddress) external returns(bool) {
     require(addressToId[tokenAddress] == 0);
     ++tokenId;
@@ -38,6 +37,7 @@ contract Registration is Ownable {
     return true;
   }
 
+  //---GETTERS
   function getAddressId(address tokenAddress) external view returns(uint) {
     return addressToId[tokenAddress];
   }
@@ -49,6 +49,57 @@ contract Registration is Ownable {
   function getId() external view returns(uint) {
     return tokenId;
   }
+
+  function getContractOwner(address tokenAddress) public view returns(address rt) {
+    NewToken newToken = NewToken(tokenAddress);
+    return newToken.owner();
+  }
+
+  function getFlag1(address tokenAddress) external view returns(uint rt) {
+    return flag1[tokenAddress];
+  }
+
+  function getTokenName(address tokenAddress) external view returns(string memory rt) {
+    return tokenName[tokenAddress];
+  }
+
+  function getTokenSymbol(address tokenAddress) external view returns(string memory rt) {
+    return tokenSymbol[tokenAddress];
+  }
+
+  function getTokenLogo(address tokenAddress) external view returns(string memory rt) {
+    return logoURL[tokenAddress];
+  }
+
+  function getTokenWeb(address tokenAddress) external view returns(string memory rt) {
+    return webURL[tokenAddress];
+  }
+
+  function getTokenSocial(address tokenAddress) external view returns(string memory rt) {
+    return socialURL[tokenAddress];
+  }
+
+  function getTokenWhitepaper(address tokenAddress) external view returns(string memory rt) {
+    return whitePaperURL[tokenAddress];
+  }
+
+  function getTokenDescription(address tokenAddress) external view returns(string memory rt) {
+    return description[tokenAddress];
+  }
+
+  function getExtra1(address tokenAddress) external view returns(string memory rt) {
+    return extra1[tokenAddress];
+  }
+
+  function changeExtra2(address tokenAddress) external view returns(string memory rt) {
+    return extra2[tokenAddress];
+  }
+
+  function getExtra3(address tokenAddress) external view returns(string memory rt) {
+    return extra3[tokenAddress];
+  }
+
+  //---SETTERS
 
   function setFlag1(address tokenAddress, uint flag) external onlyOwner returns(bool) {
     flag1[tokenAddress] = flag;
@@ -128,11 +179,7 @@ contract Registration is Ownable {
     return true;
   }
 
-  function getContractOwner(address tokenAddress) public view returns(address rt) {
-    NewToken newToken = NewToken(tokenAddress);
-    return newToken.owner();
-  }
-
+  //---REQUIRED
   function requireFlag() private view {
     require(flag1[msg.sender] != 10000);
   }
