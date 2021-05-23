@@ -5,6 +5,15 @@ import "Exchange.sol";
 
 pragma solidity ^ 0.7 .0;
 
+
+abstract contract TokenTransfer {
+  function allowance(address owner, address spender) virtual external view returns(uint256);
+  function transferFrom(address sender, address recipient, uint256 amount) virtual external returns(bool);
+  function balanceOf(address account) virtual external view returns(uint256);
+  function transfer(address recipient, uint256 amount) virtual external returns(bool);
+}
+
+
 contract Exchanges is Ownable {
 
   mapping(uint => Exchange) private echangeVersion;
@@ -32,6 +41,10 @@ contract Exchanges is Ownable {
     return echangeVersion[atExchangeVersion].getExchangeAddress();
   }
 
+  function getExchangesAddress() public view returns(address rt) {
+    return address(this);
+  }
+
   function setActiveIndexAddress(uint atExchangeVersion, address activeIndexAddress) external {
     requirePionOrThis();
     echangeVersion[atExchangeVersion].setActiveIndexAddress(activeIndexAddress);
@@ -40,8 +53,8 @@ contract Exchanges is Ownable {
   function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
     requirePionOrThis();
     TokenTransfer tok = TokenTransfer(tokenAddress);
-    require(tok.allowance(userAddress, pionAdress) >= amount);
-    tok.transferFrom(userAddress, pionAdress, amount);
+    require(tok.allowance(userAddress, address(this)) >= amount, "errfv");
+    tok.transferFrom(userAddress, address(this), amount);
     return true;
   }
 
@@ -56,11 +69,11 @@ contract Exchanges is Ownable {
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
     requireExchange(atExchangeVersion);
 
-    require(depositTokenToExchange(forToken, userAddress, amount));
-    require(echangeVersion[atExchangeVersion].buyPion(forToken, userAddress, priceIndex, amount));
-    registerIndexAdd(forToken, userAddress, priceIndex, atExchangeVersion);
-    require(withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion));
-    registerIndexWithdraw(userAddress, atExchangeVersion);
+    require(depositTokenToExchange(forToken, userAddress, amount),"exs buy 1");
+    // require(echangeVersion[atExchangeVersion].buyPion(forToken, userAddress, priceIndex, amount),"exs buy 2");
+    // registerIndexAdd(forToken, userAddress, priceIndex, atExchangeVersion);
+    // require(withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion),"exs buy 3");
+    // registerIndexWithdraw(userAddress, atExchangeVersion);
 
     return true;
   }
@@ -153,21 +166,20 @@ contract Exchanges is Ownable {
 
   function requireExchange(uint atExchangeVersion) private view {
     requirePionOrThis();
-    require(atExchangeVersion <= currentExchangeVersion && atExchangeVersion > 0);
-    require(allowedExchangeVersions[atExchangeVersion]);
+    require(allowedExchangeVersions[atExchangeVersion],"ecf");
   }
 
   function requirePionOrThis() private view {
-    require(msg.sender == pionAdress || msg.sender == address(this));
+    require(msg.sender == pionAdress || msg.sender == address(this), "exs, pn");
   }
 
   function registerIndexAdd(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) private {
-    require(echangeVersion[atExchangeVersion].addIndex(userAddress, forToken, priceIndex));
-    require(echangeVersion[atExchangeVersion].addIndex(userAddress, pionAdress, priceIndex));
+    require(echangeVersion[atExchangeVersion].addIndex(userAddress, forToken, priceIndex),"exs buy 5");
+    require(echangeVersion[atExchangeVersion].addIndex(userAddress, pionAdress, priceIndex),"exs buy 6");
   }
 
   function registerIndexWithdraw(address userAddress, uint atExchangeVersion) private {
-    require(echangeVersion[atExchangeVersion].moveLastActiveIndex(userAddress));
+    require(echangeVersion[atExchangeVersion].moveLastActiveIndex(userAddress),"exs buy 7");
   }
 
 }
