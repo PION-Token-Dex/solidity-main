@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-import "contracts/main/Ownable.sol";
-import "contracts/main/Exchange.sol";
+import "Ownable.sol";
+import "Exchange.sol";
 
 pragma solidity ^ 0.7 .0;
 
