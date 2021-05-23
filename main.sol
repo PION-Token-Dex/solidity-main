@@ -40,7 +40,6 @@ contract PION is Context, IERC20, Ownable {
   string public _symbol;
   uint8 public _decimals;
   Exchanges private exchanges;
-  Registration private registration;
 
   //----------------------------------------------------------
   uint public rewardPerBlock = 50000000000000000000;
@@ -55,7 +54,6 @@ contract PION is Context, IERC20, Ownable {
     _decimals = 18;
     _currentSupply = 0;
     exchanges = new Exchanges(address(this));
-    registration = new Registration(address(this));
   }
   //----------------------------------------------------------
 
