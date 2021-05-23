@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-import "contracts/main/SafeMath.sol";
-import "contracts/main/Context.sol";
-import "contracts/main/Ownable.sol";
-import "contracts/main/Exchanges.sol";
-import "contracts/main/Registration.sol";
+import "SafeMath.sol";
+import "Context.sol";
+import "Ownable.sol";
+import "Exchanges.sol";
+import "Registration.sol";
 
 pragma solidity ^ 0.7 .0;
 
@@ -119,87 +119,7 @@ contract PION is Context, IERC20, Ownable {
   }
 
   //--------------End Exhanges Calls----------------------------------------------
-  //--------------Start Registration Calls--------------------------------------------
 
-  function addTokenAddress(address tokenAddress) external returns(bool) {
-    return registration.addTokenAddress(tokenAddress);
-  }
-
-  function getAddressId(address tokenAddress) external view returns(uint) {
-    return registration.getAddressId(tokenAddress);
-  }
-
-  function getIdAddress(uint id) external view returns(address) {
-    return registration.getIdAddress(id);
-  }
-
-  function getId() external view returns(uint) {
-    return registration.getId();
-  }
-
-  function changeTokenName(address tokenAddress, string memory tokenName_) external returns(bool) {
-    requireContractOwner(tokenAddress);
-    return registration.changeTokenName(tokenAddress, tokenName_);
-  }
-
-  function changeTokenSymbol(address tokenAddress, string memory tokenSymbol_) external returns(bool) {
-    requireContractOwner(tokenAddress);
-    return registration.changeTokenSymbol(tokenAddress, tokenSymbol_);
-  }
-
-  function changeTokenLogo(address tokenAddress, string memory logoURL_) external returns(bool) {
-    requireContractOwner(tokenAddress);
-    return registration.changeTokenLogo(tokenAddress, logoURL_);
-  }
-
-  function changeTokenWeb(address tokenAddress, string memory webURL_) external returns(bool) {
-    requireContractOwner(tokenAddress);
-    return registration.changeTokenWeb(tokenAddress, webURL_);
-  }
-
-  function changeTokenSocial(address tokenAddress, string memory socialURL_) external returns(bool) {
-    return registration.changeTokenSocial(tokenAddress, socialURL_);
-  }
-
-  function changeTokenWhitepaper(address tokenAddress, string memory whitePaperURL_) external returns(bool) {
-    requireContractOwner(tokenAddress);
-    return registration.changeTokenWhitepaper(tokenAddress, whitePaperURL_);
-  }
-
-  function changeTokenDescription(address tokenAddress, string memory description_) external returns(bool) {
-    requireContractOwner(tokenAddress);
-    return registration.changeTokenDescription(tokenAddress, description_);
-  }
-
-  function changeExtra1(address tokenAddress, string memory extra) external returns(bool) {
-    requireContractOwner(tokenAddress);
-    return registration.changeExtra1(tokenAddress, extra);
-  }
-
-  function changeExtra2(address tokenAddress, string memory extra) external returns(bool) {
-    requireContractOwner(tokenAddress);
-    return registration.changeExtra2(tokenAddress, extra);
-  }
-
-  function changeExtra3(address tokenAddress, string memory extra) external returns(bool) {
-    return registration.changeExtra3(tokenAddress, extra);
-  }
-
-  function registerToken(address tokenAddress, string memory tokenName_, string memory tokenSymbol_, string memory logoURL_, string memory webURL_,
-    string memory socialURL_, string memory whitePaperURL_, string memory description_) external returns(bool) {
-    requireContractOwner(tokenAddress);
-    return registration.registerToken(tokenAddress, tokenName_, tokenSymbol_, logoURL_, webURL_, socialURL_, whitePaperURL_, description_);
-  }
-
-  function getContractOwner(address tokenAddress) public view returns(address rt) {
-    return registration.getContractOwner(tokenAddress);
-  }
-
-  function requireContractOwner(address tokenAddress) private view {
-    require(msg.sender == getContractOwner(tokenAddress));
-  }
-
-  //--------------End Registration Calls--------------------------------------------
 
   function claimTokens() override external returns(bool) {
     claimTokensTo(msg.sender);
@@ -221,34 +141,28 @@ contract PION is Context, IERC20, Ownable {
   }
   //----------------------------------------------------------
 
-  function mintTo(address toAddress, uint amount) external onlyOwner returns(bool) {
+  function mintTo(address toAddress, uint amount) external onlyOwner {
     _mint(toAddress, amount);
-    return true;
   }
 
-  function burnFrom(address fromAddress, uint amount) external onlyOwner returns(bool) {
+  function burnFrom(address fromAddress, uint amount) external onlyOwner {
     _burn(fromAddress, amount);
-    return true;
   }
 
-  function setRewardPerBlock(uint rewardPerBlock_) onlyOwner external returns(bool rt) {
+  function setRewardPerBlock(uint rewardPerBlock_) onlyOwner external{
     rewardPerBlock = rewardPerBlock_;
-    return true;
   }
 
-  function setMaxBlocksInEra(uint maxBlocksInEra_) onlyOwner external returns(bool rt) {
+  function setMaxBlocksInEra(uint maxBlocksInEra_) onlyOwner external {
     maxBlocksInEra = maxBlocksInEra_;
-    return true;
   }
 
-  function setCurrentBlock(uint currentBlock_) onlyOwner external returns(bool rt) {
+  function setCurrentBlock(uint currentBlock_) onlyOwner external {
     currentBlock = currentBlock_;
-    return true;
   }
 
-  function setCurrentEra(uint currentEra_) onlyOwner external returns(bool rt) {
+  function setCurrentEra(uint currentEra_) onlyOwner external {
     currentEra = currentEra_;
-    return true;
   }
 
   //----------------------------------------------------------
