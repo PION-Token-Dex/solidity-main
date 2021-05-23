@@ -45,10 +45,10 @@ contract Exchanges is Ownable {
     return address(this);
   }
 
-  function setActiveIndexAddress(uint atExchangeVersion, address activeIndexAddress) external {
-    requirePionOrThis();
-    echangeVersion[atExchangeVersion].setActiveIndexAddress(activeIndexAddress);
-  }
+//   function setActiveIndexAddress(uint atExchangeVersion, address activeIndexAddress) external {
+//     requirePionOrThis();
+//     echangeVersion[atExchangeVersion].setActiveIndexAddress(activeIndexAddress);
+//   }
 
   function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
     requirePionOrThis();
@@ -69,8 +69,8 @@ contract Exchanges is Ownable {
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
     requireExchange(atExchangeVersion);
 
-    require(depositTokenToExchange(forToken, userAddress, amount),"exs buy 1");
-    // require(echangeVersion[atExchangeVersion].buyPion(forToken, userAddress, priceIndex, amount),"exs buy 2");
+    // require(depositTokenToExchange(forToken, userAddress, amount));
+    require(echangeVersion[atExchangeVersion].buyPion(forToken, userAddress, priceIndex, amount),"exs buy 2");
     // registerIndexAdd(forToken, userAddress, priceIndex, atExchangeVersion);
     // require(withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion),"exs buy 3");
     // registerIndexWithdraw(userAddress, atExchangeVersion);
