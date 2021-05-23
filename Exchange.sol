@@ -1,7 +1,4 @@
 // SPDX-License-Identifier: MIT
-import "secret/ActiveIndexes.sol";
-import "secret/TradingNode.sol";
-
 
 
 pragma solidity ^ 0.7 .0;
@@ -50,60 +47,66 @@ contract IndexManagement {
 }
 
 
-// abstract contract ActiveIndexes {
-//   function buy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
+abstract contract ActiveIndexes {
+  function buy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
 
-//   function sell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
+  function sell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
 
-//   function cancelAt(address userAddress, uint priceIndex) public virtual returns(bool rt);
+  function cancelAt(address userAddress, uint priceIndex) public virtual returns(bool rt);
 
-//   function withdrawAll(address userAddress, uint priceIndex) public virtual returns(bool rt);
+  function withdrawAll(address userAddress, uint priceIndex) public virtual returns(bool rt);
 
-//   function getTradeData(uint tradePlaces) public virtual view returns(uint[] memory rt);
+  function getTradeData(uint tradePlaces) public virtual view returns(uint[] memory rt);
 
-//   function getTradingNode(uint priceIndex) external virtual view returns(TradingNode rt);
+  function getTradingNode(uint priceIndex) external virtual view returns(TradingNode rt);
 
-//   function getTradingNode() external virtual view returns(TradingNode rt);
+  function getTradingNode() external virtual view returns(TradingNode rt);
 
-//   function withdrawBuy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
+  function withdrawBuy(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
 
-//   function withdrawSell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
+  function withdrawSell(address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
 
-//   function getCurrentIndex() external virtual view returns(uint rt);
+  function getCurrentIndex() external virtual view returns(uint rt);
 
-//   function extraFunction(address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
+  function extraFunction(address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
+  
+function setExchangeAddress(address exchangeAddress_) external virtual returns(bool rt);
 
-// }
 
-// abstract contract TradingNode {
-//   function getWithdrawAmountBuy(address usrAddress) external virtual view returns(uint rt);
+}
 
-//   function getWithdrawAmountSell(address usrAddress) external virtual view returns(uint rt);
+abstract contract TradingNode {
+  function getWithdrawAmountBuy(address usrAddress) external virtual view returns(uint rt);
 
-//   function toNative(uint nonNativeAmount) public virtual view returns(uint rt);
+  function getWithdrawAmountSell(address usrAddress) external virtual view returns(uint rt);
 
-//   function toNonNative(uint nonNativeAmount) public virtual view returns(uint rt);
+  function toNative(uint nonNativeAmount) public virtual view returns(uint rt);
 
-//   function getTotalBuyActiveAmount() external virtual view returns(uint rt);
+  function toNonNative(uint nonNativeAmount) public virtual view returns(uint rt);
 
-//   function getTotalSellActiveAmount() external virtual view returns(uint rt);
-// }
+  function getTotalBuyActiveAmount() external virtual view returns(uint rt);
+
+  function getTotalSellActiveAmount() external virtual view returns(uint rt);
+}
 
 contract Exchange is IndexManagement {
+    
+ 
+    
 
-  address private activeIndexesAddress;
   ActiveIndexes private null_activeIndexes;
 
   mapping(address => ActiveIndexes) private tokenIndexes;
 
   address private exchangesAddress;
+  address private activeIndexesAddress;
 
   constructor(address exchangesAddress_) {
     exchangesAddress = exchangesAddress_;
   }
 
   function checkCall() private view {
-    require(msg.sender == exchangesAddress || msg.sender == address(this), "ex 1234");
+    require(msg.sender == exchangesAddress || msg.sender == address(this));
   }
 
   function getExchangeAddress() public view returns(address rt) {
@@ -116,7 +119,8 @@ contract Exchange is IndexManagement {
   }
 
   function addToken(address forToken) private {
-    tokenIndexes[forToken] = ActiveIndexes(address(this));
+    tokenIndexes[forToken] =  ActiveIndexes(activeIndexesAddress);
+    tokenIndexes[forToken].setExchangeAddress(address(this));
   }
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
@@ -124,9 +128,7 @@ contract Exchange is IndexManagement {
     if (tokenIndexes[forToken] == null_activeIndexes) {
       addToken(forToken);
     }
-    ActiveIndexes ai = tokenIndexes[forToken];
-    //ai.buy(userAddress, priceIndex, amount);
-    
+    require(tokenIndexes[forToken].buy(userAddress, priceIndex, amount));
     return true;
   }
 
@@ -135,7 +137,7 @@ contract Exchange is IndexManagement {
     if (tokenIndexes[forToken] == null_activeIndexes) {
       addToken(forToken);
     }
-    tokenIndexes[forToken].sell(userAddress, priceIndex, amount);
+    require(tokenIndexes[forToken].sell(userAddress, priceIndex, amount));
     return true;
   }
 
@@ -205,7 +207,7 @@ contract Exchange is IndexManagement {
 
   function extraFunction(address tokenAddress, address[] memory inAddress, uint[] memory inUint) public returns(bool rt) {
     checkCall();
-    // tokenIndexes[tokenAddress].extraFunction(inAddress, inUint);
+    tokenIndexes[tokenAddress].extraFunction(inAddress, inUint);
     return true;
   }
 
