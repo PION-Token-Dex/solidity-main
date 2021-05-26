@@ -48,31 +48,17 @@ contract IndexManagement {
 
 
 abstract contract ActiveIndexes {
-  function buy(address tokenAddress, address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-
-  function sell(address tokenAddress, address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-
-  function cancelAt(address tokenAddress, address userAddress, uint priceIndex) public virtual returns(bool rt);
-
-  function withdrawAll(address tokenAddress, address userAddress, uint priceIndex) public virtual returns(bool rt);
-
-  function getTradeData(address tokenAddress, uint tradePlaces) public virtual view returns(uint[] memory rt);
-
-  function getTradingNode(address tokenAddress, uint priceIndex) external virtual view returns(TradingNode rt);
-
-  function getTradingNode(address tokenAddress) external virtual view returns(TradingNode rt);
-
-  function withdrawBuy(address tokenAddress, address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-
-  function withdrawSell(address tokenAddress, address userAddress, uint priceIndex, uint amount) public virtual returns(bool rt);
-
-  function getCurrentIndex(address tokenAddress) external virtual view returns(uint rt);
-
-  function extraFunction(address tokenAddress, address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
-  
-  function setExchangeAddress(address exchangeAddress_) external virtual returns(bool rt);
-
-
+function buy(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
+function sell(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
+function cancelAt(address tokenAddress, address userAddress, uint priceIndex) external virtual returns(bool rt);
+function withdrawAll(address tokenAddress, address userAddress, uint priceIndex) external virtual returns(bool rt);
+function withdrawBuy(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
+function withdrawSell(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
+function getTradeData(address tokenAddress, uint tradePlaces) external virtual view returns(uint[] memory rt);
+function getTradingNode(address tokenAddress, uint priceIndex) external virtual view returns(TradingNode rt);
+function getTradingNode(address tokenAddress) external virtual view returns(TradingNode rt);
+function getCurrentIndex(address tokenAddress) external virtual view returns(uint rt);
+function extraFunction(address tokenAddress, address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
 }
 
 abstract contract TradingNode {
@@ -104,7 +90,7 @@ contract Exchange is IndexManagement {
   }
 
   function checkCall() private view {
-    require(msg.sender == exchangesAddress || msg.sender == address(this));
+    //require(msg.sender == exchangesAddress || msg.sender == address(this));
   }
 
   function getExchangeAddress() public view returns(address rt) {
@@ -117,25 +103,14 @@ contract Exchange is IndexManagement {
     tokenIndexes = ActiveIndexes(activeIndexAddress_);
   }
 
-  function addToken(address forToken) private {
-    // tokenIndexes[forToken] =  ActiveIndexes(activeIndexesAddress);
-    // tokenIndexes[forToken].setExchangeAddress(address(this));
-  }
-
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
     checkCall();
-    // if (tokenIndexes[forToken] == null_activeIndexes) {
-    //   addToken(forToken);
-    // }
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
     return true;
   }
 
   function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
     checkCall();
-    // if (tokenIndexes[forToken] == null_activeIndexes) {
-    //   addToken(forToken);
-    // }
     require(tokenIndexes.sell(forToken, userAddress, priceIndex, amount));
     return true;
   }
