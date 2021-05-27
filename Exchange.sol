@@ -25,6 +25,8 @@ contract IndexManagement {
   function moveLastActiveIndex(address userAddress, uint toIndex) internal {
     userIndexes[userAddress].lastActiveIdBottom = toIndex;
   }
+  
+
 
   function getTokenPriceIndexes(address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt) {
     uint[] memory ret = new uint[](maxIndexes);
@@ -59,6 +61,8 @@ function getTradingNode(address tokenAddress, uint priceIndex) external virtual 
 function getTradingNode(address tokenAddress) external virtual view returns(TradingNode rt);
 function getCurrentIndex(address tokenAddress) external virtual view returns(uint rt);
 function extraFunction(address tokenAddress, address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
+function getWithdrawAmountBuy(address tokenAddress, uint priceIndex, address usrAddress) public virtual view returns(uint rt);
+function getWithdrawAmountSell(address tokenAddress, uint priceIndex, address usrAddress) public virtual view returns(uint rt);
 }
 
 abstract contract TradingNode {
@@ -82,12 +86,12 @@ contract Exchange is IndexManagement {
 
   ActiveIndexes private tokenIndexes;
 
-  address private exchangesAddress;
+  address private pionAdress = address(12345);
   address private activeIndexesAddress;
 
-  constructor(address exchangesAddress_) {
-    exchangesAddress = exchangesAddress_;
-  }
+//   constructor(address exchangesAddress_) {
+//     exchangesAddress = exchangesAddress_;
+//   }
 
   function checkCall() private view {
     //require(msg.sender == exchangesAddress || msg.sender == address(this));
@@ -104,8 +108,11 @@ contract Exchange is IndexManagement {
   }
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    //    require(depositTokenToExchange(forToken, userAddress, amount));
     checkCall();
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
+    registerIndexAdd(forToken, userAddress, priceIndex);
+    withdrawAll(forToken, userAddress, priceIndex);
     return true;
   }
 
@@ -121,8 +128,22 @@ contract Exchange is IndexManagement {
     return true;
   }
 
-  function withdrawAll(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
+  function withdrawAll(address forToken, address userAddress, uint priceIndex) public returns(bool rt) {
     checkCall();
+    
+    uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
+    uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
+    
+    if (withdrawSellData > 0) {
+    //   require(sendTokenToUser(forToken, userAddress, withdrawSellData));
+    }
+
+    // if (withdrawBuyData > 0) {
+    // //   require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
+    // }
+
+    // registerIndexWithdraw(userAddress);
+
     tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
     return true;
   }
@@ -146,20 +167,12 @@ contract Exchange is IndexManagement {
 
   function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    TradingNode tn = tokenIndexes.getTradingNode(forToken, priceIndex);
-    if(tn==tokenIndexes.getTradingNode(address(0), 0)){
-        return 0;
-    }
-    return tn.getWithdrawAmountBuy(userAddress);
+    return tokenIndexes.getWithdrawAmountBuy( forToken,  priceIndex,  userAddress);
   }
 
   function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    TradingNode tn = tokenIndexes.getTradingNode(forToken, priceIndex);
-    if(tn==tokenIndexes.getTradingNode(address(0), 0)){
-        return 0;
-    }
-    return tn.getWithdrawAmountSell(userAddress);
+    return tokenIndexes.getWithdrawAmountSell( forToken,  priceIndex,  userAddress);
   }
   //--------------------------------
 
@@ -198,6 +211,7 @@ contract Exchange is IndexManagement {
   function findNextWithdrawIndex(address userAddress) private view returns(uint rt) {
     uint ret = userIndexes[userAddress].lastActiveIdBottom;
     uint to = userIndexes[userAddress].lastId;
+    uint cnt=0;
     for (; ret <= to; ret++) {
       address forToken = userIndexes[userAddress].tokenMap[ret];
       uint priceIndex = userIndexes[userAddress].priceIndex[ret];
@@ -206,21 +220,23 @@ contract Exchange is IndexManagement {
       if (withdrawBuyData > 0 || withdrawSellData > 0) {
         break;
       }
+      if(cnt==10000){
+          break;
+      }
+      cnt++;
     }
     return ret;
   }
 
-  function moveLastActiveIndex(address userAddress) public returns(bool rt) {
-    checkCall();
-    uint toIndex = findNextWithdrawIndex(userAddress);
-    moveLastActiveIndex(userAddress, toIndex);
-    return true;
+  function registerIndexAdd(address forToken, address userAddress, uint priceIndex) private {
+    addIndex_(userAddress, forToken, priceIndex);
+    addIndex_(userAddress, pionAdress, priceIndex);
   }
 
-  function addIndex(address userAddress, address tokenAddress, uint priceIndex) public returns(bool rt) {
-    checkCall();
-    return addIndex_(userAddress, tokenAddress, priceIndex);
+  function registerIndexWithdraw(address userAddress) private {
+    moveLastActiveIndex(userAddress, findNextWithdrawIndex(userAddress));
   }
+
 
   //--------------------------------END INDEX MANAGEMENT---------------
 
