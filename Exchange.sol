@@ -146,12 +146,20 @@ contract Exchange is IndexManagement {
 
   function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    return tokenIndexes.getTradingNode(forToken, priceIndex).getWithdrawAmountBuy(userAddress);
+    TradingNode tn = tokenIndexes.getTradingNode(forToken, priceIndex);
+    if(tn==tokenIndexes.getTradingNode(address(0), 0)){
+        return 0;
+    }
+    return tn.getWithdrawAmountBuy(userAddress);
   }
 
   function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    return tokenIndexes.getTradingNode(forToken, priceIndex).getWithdrawAmountSell(userAddress);
+    TradingNode tn = tokenIndexes.getTradingNode(forToken, priceIndex);
+    if(tn==tokenIndexes.getTradingNode(address(0), 0)){
+        return 0;
+    }
+    return tn.getWithdrawAmountSell(userAddress);
   }
   //--------------------------------
 
