@@ -112,7 +112,7 @@ contract Exchange is IndexManagement {
     checkCall();
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
     registerIndexAdd(forToken, userAddress, priceIndex);
-    withdrawAll(forToken, userAddress, priceIndex);
+    withdrawAll_(forToken, userAddress, priceIndex);
     return true;
   }
 
@@ -128,7 +128,7 @@ contract Exchange is IndexManagement {
     return true;
   }
 
-  function withdrawAll(address forToken, address userAddress, uint priceIndex) public returns(bool rt) {
+  function withdrawAll_(address forToken, address userAddress, uint priceIndex) public returns(bool rt) {
     checkCall();
     
     uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
@@ -138,11 +138,11 @@ contract Exchange is IndexManagement {
     //   require(sendTokenToUser(forToken, userAddress, withdrawSellData));
     }
 
-    // if (withdrawBuyData > 0) {
-    // //   require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
-    // }
+    if (withdrawBuyData > 0) {
+    //   require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
+    }
 
-    // registerIndexWithdraw(userAddress);
+    //TODO: uint indx = findNextWithdrawIndex(userAddress);
 
     tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
     return true;
@@ -208,11 +208,12 @@ contract Exchange is IndexManagement {
 
   //--------------------------------START INDEX MANAGEMENT-------------
 
-  function findNextWithdrawIndex(address userAddress) private view returns(uint rt) {
+  function findNextWithdrawIndex(address userAddress) public view returns(uint rt) {
     uint ret = userIndexes[userAddress].lastActiveIdBottom;
     uint to = userIndexes[userAddress].lastId;
+    if(ret==to){return ret;}
     uint cnt=0;
-    for (; ret <= to; ret++) {
+    for (; ret < to; ret++) {
       address forToken = userIndexes[userAddress].tokenMap[ret];
       uint priceIndex = userIndexes[userAddress].priceIndex[ret];
       uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
@@ -233,8 +234,12 @@ contract Exchange is IndexManagement {
     addIndex_(userAddress, pionAdress, priceIndex);
   }
 
-  function registerIndexWithdraw(address userAddress) private {
-    moveLastActiveIndex(userAddress, findNextWithdrawIndex(userAddress));
+  function registerIndexWithdraw(address userAddress) public view returns(uint rt){
+      uint indx = findNextWithdrawIndex(userAddress);
+    //   if(lastActiveIndex!=userIndexes[userAddress].lastActiveIdBottom){
+    // moveLastActiveIndex(userAddress, findNextWithdrawIndex(userAddress));
+    //   }
+    return indx;
   }
 
 
