@@ -61,8 +61,8 @@ function getTradingNode(address tokenAddress, uint priceIndex) external virtual 
 function getTradingNode(address tokenAddress) external virtual view returns(TradingNode rt);
 function getCurrentIndex(address tokenAddress) external virtual view returns(uint rt);
 function extraFunction(address tokenAddress, address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
-function getWithdrawAmountBuy(address tokenAddress, uint priceIndex, address usrAddress) public virtual view returns(uint rt);
-function getWithdrawAmountSell(address tokenAddress, uint priceIndex, address usrAddress) public virtual view returns(uint rt);
+function getWithdrawAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+function getWithdrawAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
 }
 
 abstract contract TradingNode {
@@ -111,7 +111,7 @@ contract Exchange is IndexManagement {
     //    require(depositTokenToExchange(forToken, userAddress, amount));
     // checkCall();
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
-    withdrawAll_(forToken, userAddress, priceIndex);
+    withdrawAll(forToken, userAddress, priceIndex);
     return true;
   }
 
@@ -127,21 +127,21 @@ contract Exchange is IndexManagement {
     return true;
   }
 
-  function withdrawAll_(address forToken, address userAddress, uint priceIndex) public returns(bool rt) {
+  function withdrawAll(address forToken, address userAddress, uint priceIndex) public returns(bool rt) {
     // checkCall();
     
     uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
-    // uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
+    uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
     
-    // if (withdrawSellData > 0) {
-    // //   require(sendTokenToUser(forToken, userAddress, withdrawSellData));
-    // }
+    if (withdrawSellData > 0) {
+    //   require(sendTokenToUser(forToken, userAddress, withdrawSellData));
+    }
 
-    // if (withdrawBuyData > 0) {
+    if (withdrawBuyData > 0) {
     //   require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
-    // }
+    }
 
-    // tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
+    tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
     return true;
   }
 
@@ -165,13 +165,13 @@ contract Exchange is IndexManagement {
   function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
     if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
-    return tokenIndexes.getWithdrawAmountBuy( forToken,  priceIndex,  userAddress);
+    return tokenIndexes.getWithdrawAmountBuy( forToken,  userAddress, priceIndex);
   }
 
   function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
     if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
-    return tokenIndexes.getWithdrawAmountSell( forToken,  priceIndex,  userAddress);
+    return tokenIndexes.getWithdrawAmountSell( forToken,  userAddress, priceIndex);
   }
   //--------------------------------
 
