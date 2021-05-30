@@ -141,7 +141,9 @@ contract Exchange is IndexManagement {
     //   require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
     }
 
+    if(withdrawSellData > 0 || withdrawBuyData > 0){
     tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
+    }
     return true;
   }
 
@@ -199,11 +201,11 @@ contract Exchange is IndexManagement {
     return tokenIndexes.getCurrentIndex(forToken);
   }
 
-  function extraFunction(address forToken, address[] memory inAddress, uint[] memory inUint) public returns(bool rt) {
-    checkCall();
-    tokenIndexes.extraFunction(forToken, inAddress, inUint);
-    return true;
-  }
+//   function extraFunction(address forToken, address[] memory inAddress, uint[] memory inUint) public returns(bool rt) {
+//     checkCall();
+//     tokenIndexes.extraFunction(forToken, inAddress, inUint);
+//     return true;
+//   }
 
   //--------------------------------START INDEX MANAGEMENT-------------
 
