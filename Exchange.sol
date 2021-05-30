@@ -4,47 +4,47 @@
 pragma solidity ^ 0.7 .0;
 
 contract IndexManagement {
-  struct Indexes {
-    mapping(uint => address) tokenMap; //id, tokenAddress
-    mapping(uint => uint) priceIndex; //id, priceIndex
-    uint lastId;
-    uint lastActiveIdBottom;
-  }
+//   struct Indexes {
+//     mapping(uint => address) tokenMap; //id, tokenAddress
+//     mapping(uint => uint) priceIndex; //id, priceIndex
+//     uint lastId;
+//     uint lastActiveIdBottom;
+//   }
 
-  mapping(address => Indexes) internal userIndexes; //user address, indexes
+//   mapping(address => Indexes) internal userIndexes; //user address, indexes
 
-  function addIndex_(address userAddress, address tokenAddress, uint priceIndex) internal returns(bool rt) {
-    uint lastId = userIndexes[userAddress].lastId;
-    ++lastId;
-    userIndexes[userAddress].lastId = lastId;
-    userIndexes[userAddress].tokenMap[lastId] = tokenAddress;
-    userIndexes[userAddress].priceIndex[lastId] = priceIndex;
-    return true;
-  }
+//   function addIndex_(address userAddress, address tokenAddress, uint priceIndex) internal returns(bool rt) {
+//     uint lastId = userIndexes[userAddress].lastId;
+//     ++lastId;
+//     userIndexes[userAddress].lastId = lastId;
+//     userIndexes[userAddress].tokenMap[lastId] = tokenAddress;
+//     userIndexes[userAddress].priceIndex[lastId] = priceIndex;
+//     return true;
+//   }
 
-  function moveLastActiveIndex(address userAddress, uint toIndex) internal {
-    userIndexes[userAddress].lastActiveIdBottom = toIndex;
-  }
+//   function moveLastActiveIndex(address userAddress, uint toIndex) internal {
+//     userIndexes[userAddress].lastActiveIdBottom = toIndex;
+//   }
   
 
 
-  function getTokenPriceIndexes(address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt) {
-    uint[] memory ret = new uint[](maxIndexes);
-    uint from = userIndexes[userAddress].lastActiveIdBottom;
-    uint to = userIndexes[userAddress].lastId;
-    uint t = 0;
-    uint cnt = 0;
-    for (; from <= to; from++) {
-      if (cnt == 10000) break;
-      if (userIndexes[userAddress].tokenMap[from] == tokenAddress) {
-        ret[t] = userIndexes[userAddress].priceIndex[from];
-        ++t;
-        if (t == maxIndexes) break;
-      }
-      ++cnt;
-    }
-    return ret;
-  }
+//   function getTokenPriceIndexes(address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt) {
+//     uint[] memory ret = new uint[](maxIndexes);
+//     uint from = userIndexes[userAddress].lastActiveIdBottom;
+//     uint to = userIndexes[userAddress].lastId;
+//     uint t = 0;
+//     uint cnt = 0;
+//     for (; from <= to; from++) {
+//       if (cnt == 10000) break;
+//       if (userIndexes[userAddress].tokenMap[from] == tokenAddress) {
+//         ret[t] = userIndexes[userAddress].priceIndex[from];
+//         ++t;
+//         if (t == maxIndexes) break;
+//       }
+//       ++cnt;
+//     }
+//     return ret;
+//   }
 
 }
 
@@ -109,9 +109,8 @@ contract Exchange is IndexManagement {
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
     //    require(depositTokenToExchange(forToken, userAddress, amount));
-    checkCall();
+    // checkCall();
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
-    registerIndexAdd(forToken, userAddress, priceIndex);
     withdrawAll_(forToken, userAddress, priceIndex);
     return true;
   }
@@ -129,22 +128,20 @@ contract Exchange is IndexManagement {
   }
 
   function withdrawAll_(address forToken, address userAddress, uint priceIndex) public returns(bool rt) {
-    checkCall();
+    // checkCall();
     
     uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
-    uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
+    // uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
     
-    if (withdrawSellData > 0) {
-    //   require(sendTokenToUser(forToken, userAddress, withdrawSellData));
-    }
+    // if (withdrawSellData > 0) {
+    // //   require(sendTokenToUser(forToken, userAddress, withdrawSellData));
+    // }
 
-    if (withdrawBuyData > 0) {
+    // if (withdrawBuyData > 0) {
     //   require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
-    }
+    // }
 
-    //TODO: uint indx = findNextWithdrawIndex(userAddress);
-
-    tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
+    // tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
     return true;
   }
 
@@ -167,11 +164,13 @@ contract Exchange is IndexManagement {
 
   function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
+    if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
     return tokenIndexes.getWithdrawAmountBuy( forToken,  priceIndex,  userAddress);
   }
 
   function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
+    if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
     return tokenIndexes.getWithdrawAmountSell( forToken,  priceIndex,  userAddress);
   }
   //--------------------------------
@@ -208,39 +207,39 @@ contract Exchange is IndexManagement {
 
   //--------------------------------START INDEX MANAGEMENT-------------
 
-  function findNextWithdrawIndex(address userAddress) public view returns(uint rt) {
-    uint ret = userIndexes[userAddress].lastActiveIdBottom;
-    uint to = userIndexes[userAddress].lastId;
-    if(ret==to){return ret;}
-    uint cnt=0;
-    for (; ret < to; ret++) {
-      address forToken = userIndexes[userAddress].tokenMap[ret];
-      uint priceIndex = userIndexes[userAddress].priceIndex[ret];
-      uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
-      uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
-      if (withdrawBuyData > 0 || withdrawSellData > 0) {
-        break;
-      }
-      if(cnt==10000){
-          break;
-      }
-      cnt++;
-    }
-    return ret;
-  }
+//   function findNextWithdrawIndex(address userAddress) public view returns(uint rt) {
+//     uint ret = userIndexes[userAddress].lastActiveIdBottom;
+//     uint to = userIndexes[userAddress].lastId;
+//     if(ret==to){return ret;}
+//     uint cnt=0;
+//     for (; ret < to; ret++) {
+//       address forToken = userIndexes[userAddress].tokenMap[ret];
+//       uint priceIndex = userIndexes[userAddress].priceIndex[ret];
+//       uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
+//       uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
+//       if (withdrawBuyData > 0 || withdrawSellData > 0) {
+//         break;
+//       }
+//       if(cnt==10000){
+//           break;
+//       }
+//       cnt++;
+//     }
+//     return ret;
+//   }
 
-  function registerIndexAdd(address forToken, address userAddress, uint priceIndex) private {
-    addIndex_(userAddress, forToken, priceIndex);
-    addIndex_(userAddress, pionAdress, priceIndex);
-  }
+//   function registerIndexAdd(address forToken, address userAddress, uint priceIndex) private {
+//     addIndex_(userAddress, forToken, priceIndex);
+//     addIndex_(userAddress, pionAdress, priceIndex);
+//   }
 
-  function registerIndexWithdraw(address userAddress) public view returns(uint rt){
-      uint indx = findNextWithdrawIndex(userAddress);
-    //   if(lastActiveIndex!=userIndexes[userAddress].lastActiveIdBottom){
-    // moveLastActiveIndex(userAddress, findNextWithdrawIndex(userAddress));
-    //   }
-    return indx;
-  }
+//   function registerIndexWithdraw(address userAddress) public view returns(uint rt){
+//       uint indx = findNextWithdrawIndex(userAddress);
+//     //   if(lastActiveIndex!=userIndexes[userAddress].lastActiveIdBottom){
+//     // moveLastActiveIndex(userAddress, findNextWithdrawIndex(userAddress));
+//     //   }
+//     return indx;
+//   }
 
 
   //--------------------------------END INDEX MANAGEMENT---------------
