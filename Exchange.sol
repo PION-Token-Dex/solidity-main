@@ -34,12 +34,12 @@ contract Exchange {
   address private pionAdress;
   address private activeIndexesAddress;
 
-//   constructor(address pionAdress_) {
-//     pionAdress = pionAdress_;
-//   }
+  constructor(address pionAdress_) {
+    pionAdress = pionAdress_;
+  }
 
   function checkCall() private view {
-    //require(msg.sender == activeIndexesAddress || msg.sender == address(this));
+    require(msg.sender == pionAdress || msg.sender == address(this));
   }
 
   function getExchangeAddress() public view returns(address rt) {
@@ -53,7 +53,7 @@ contract Exchange {
   }
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    //require(depositTokenToExchange(forToken, userAddress, amount));
+    require(depositTokenToExchange(forToken, userAddress, amount));
     checkCall();
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
     withdrawAll(forToken, userAddress, priceIndex);
@@ -61,8 +61,7 @@ contract Exchange {
   }
 
   function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    //require(depositTokenToExchange(pionAdress, userAddress, amount));
-
+    require(depositTokenToExchange(pionAdress, userAddress, amount));
     checkCall();
     require(tokenIndexes.sell(forToken, userAddress, priceIndex, amount));
     withdrawAll(forToken, userAddress, priceIndex);
@@ -83,11 +82,11 @@ contract Exchange {
     uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
     
     if (withdrawSellData > 0) {
-    //   require(sendTokenToUser(forToken, userAddress, withdrawSellData));
+      require(sendTokenToUser(forToken, userAddress, withdrawSellData));
     }
 
     if (withdrawBuyData > 0) {
-    //   require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
+      require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
     }
 
     if(withdrawSellData > 0 || withdrawBuyData > 0){
