@@ -1,29 +1,38 @@
 // SPDX-License-Identifier: MIT
 
-
 pragma solidity ^ 0.7 .0;
 
- 
-
 abstract contract ActiveIndexes {
-function buy(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
-function sell(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
-function cancelAt(address tokenAddress, address userAddress, uint priceIndex) external virtual returns(bool rt);
-function withdrawAll(address tokenAddress, address userAddress, uint priceIndex) external virtual returns(bool rt);
-function withdrawBuy(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
-function withdrawSell(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
-function getTradeData(address tokenAddress, uint tradePlaces) external virtual view returns(uint[] memory rt);
-function getWithdrawAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
-function getWithdrawAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
-function getAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
-function getAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
-}
+  function buy(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
 
+  function sell(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
+
+  function cancelAt(address tokenAddress, address userAddress, uint priceIndex) external virtual returns(bool rt);
+
+  function withdrawAll(address tokenAddress, address userAddress, uint priceIndex) external virtual returns(bool rt);
+
+  function withdrawBuy(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
+
+  function withdrawSell(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
+
+  function getTradeData(address tokenAddress, uint tradePlaces) external virtual view returns(uint[] memory rt);
+
+  function getWithdrawAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+
+  function getWithdrawAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+
+  function getAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+
+  function getAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+}
 
 abstract contract TokenTransfer {
   function allowance(address owner, address spender) virtual external view returns(uint256);
+
   function transferFrom(address sender, address recipient, uint256 amount) virtual external returns(bool);
+
   function balanceOf(address account) virtual external view returns(uint256);
+
   function transfer(address recipient, uint256 amount) virtual external returns(bool);
 }
 
@@ -42,7 +51,8 @@ contract Exchange {
     require(msg.sender == pionAdress || msg.sender == address(this));
   }
 
-  function getExchangeAddress() public view returns(address rt) {
+  function getExchangeAddress() external view returns(address rt) {
+    checkCall();
     return address(this);
   }
 
@@ -53,16 +63,16 @@ contract Exchange {
   }
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    require(depositTokenToExchange(forToken, userAddress, amount));
     checkCall();
+    require(depositTokenToExchange(forToken, userAddress, amount));
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
     withdrawAll(forToken, userAddress, priceIndex);
     return true;
   }
 
   function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    require(depositTokenToExchange(pionAdress, userAddress, amount));
     checkCall();
+    require(depositTokenToExchange(pionAdress, userAddress, amount));
     require(tokenIndexes.sell(forToken, userAddress, priceIndex, amount));
     withdrawAll(forToken, userAddress, priceIndex);
     return true;
@@ -76,11 +86,11 @@ contract Exchange {
   }
 
   function withdrawAll(address forToken, address userAddress, uint priceIndex) public returns(bool rt) {
-    // checkCall();
-    
+    checkCall();
+
     uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
     uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
-    
+
     if (withdrawSellData > 0) {
       require(sendTokenToUser(forToken, userAddress, withdrawSellData));
     }
@@ -89,8 +99,8 @@ contract Exchange {
       require(sendTokenToUser(pionAdress, userAddress, withdrawBuyData));
     }
 
-    if(withdrawSellData > 0 || withdrawBuyData > 0){
-    tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
+    if (withdrawSellData > 0 || withdrawBuyData > 0) {
+      tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
     }
     return true;
   }
@@ -114,38 +124,38 @@ contract Exchange {
 
   function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    return tokenIndexes.getWithdrawAmountBuy( forToken,  userAddress, priceIndex);
+    return tokenIndexes.getWithdrawAmountBuy(forToken, userAddress, priceIndex);
   }
 
   function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    return tokenIndexes.getWithdrawAmountSell( forToken,  userAddress, priceIndex);
+    return tokenIndexes.getWithdrawAmountSell(forToken, userAddress, priceIndex);
   }
-  
+
   function getBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    return tokenIndexes.getAmountBuy( forToken,  userAddress, priceIndex);
+    return tokenIndexes.getAmountBuy(forToken, userAddress, priceIndex);
   }
-  
+
   function getSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    return tokenIndexes.getAmountSell( forToken,  userAddress, priceIndex);
+    return tokenIndexes.getAmountSell(forToken, userAddress, priceIndex);
   }
-  
+
   //--------------------------------
 
-  function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
+  function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) private returns(bool rt) {
     TokenTransfer tok = TokenTransfer(tokenAddress);
-    require(tok.allowance(userAddress, address(this)) >= amount, "errfv");
+    require(tok.allowance(userAddress, address(this)) >= amount);
     tok.transferFrom(userAddress, address(this), amount);
     return true;
   }
-  
-    function sendTokenToUser(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
+
+  function sendTokenToUser(address tokenAddress, address userAddress, uint amount) private returns(bool rt) {
     TokenTransfer tok = TokenTransfer(tokenAddress);
-    require(tok.balanceOf(userAddress) >= amount);
+    require(tok.balanceOf(address(this)) >= amount);
     tok.transfer(userAddress, amount);
     return true;
   }
- 
+
 }
