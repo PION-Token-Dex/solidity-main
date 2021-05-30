@@ -4,6 +4,22 @@
 pragma solidity ^ 0.7 .0;
 
 contract IndexManagement {
+ //index has useraddress, tokenaddress, priceindex, type
+ //type is live(buy sell withdraw) or done
+    
+    
+struct Indexes{
+    address tokenAddress;
+    address priceIndex;
+    uint typeOf;
+}    
+
+mapping(address => Indexes) internal userIndexes; //user address, indexes
+
+
+
+    
+    
 //   struct Indexes {
 //     mapping(uint => address) tokenMap; //id, tokenAddress
 //     mapping(uint => uint) priceIndex; //id, priceIndex
@@ -59,11 +75,13 @@ function withdrawSell(address tokenAddress, address userAddress, uint priceIndex
 function getTradeData(address tokenAddress, uint tradePlaces) external virtual view returns(uint[] memory rt);
 function getWithdrawAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
 function getWithdrawAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+function getAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+function getAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
 }
 
 
 
-contract Exchange {
+contract Exchange is IndexManagement {
     
  
     
@@ -73,9 +91,9 @@ contract Exchange {
   address private pionAdress;
   address private activeIndexesAddress;
 
-  constructor(address pionAdress_) {
-    pionAdress = pionAdress_;
-  }
+//   constructor(address pionAdress_) {
+//     pionAdress = pionAdress_;
+//   }
 
   function checkCall() private view {
     //require(msg.sender == activeIndexesAddress || msg.sender == address(this));
@@ -96,6 +114,7 @@ contract Exchange {
     checkCall();
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
     withdrawAll(forToken, userAddress, priceIndex);
+    // registerIndexAdd( forToken,  userAddress,  priceIndex);
     return true;
   }
 
@@ -154,15 +173,24 @@ contract Exchange {
 
   function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    // if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
     return tokenIndexes.getWithdrawAmountBuy( forToken,  userAddress, priceIndex);
   }
 
   function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    // if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
     return tokenIndexes.getWithdrawAmountSell( forToken,  userAddress, priceIndex);
   }
+  
+  function getBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    checkCall();
+    return tokenIndexes.getAmountBuy( forToken,  userAddress, priceIndex);
+  }
+  
+  function getSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    checkCall();
+    return tokenIndexes.getAmountSell( forToken,  userAddress, priceIndex);
+  }
+  
   //--------------------------------
 
  
