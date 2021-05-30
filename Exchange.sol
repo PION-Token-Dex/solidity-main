@@ -118,12 +118,14 @@ contract Exchange is IndexManagement {
   function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
     checkCall();
     require(tokenIndexes.sell(forToken, userAddress, priceIndex, amount));
+    withdrawAll(forToken, userAddress, priceIndex);
     return true;
   }
 
   function cancelOrders(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
     checkCall();
     tokenIndexes.cancelAt(forToken, userAddress, priceIndex);
+    withdrawAll(forToken, userAddress, priceIndex);
     return true;
   }
 
@@ -177,35 +179,8 @@ contract Exchange is IndexManagement {
   }
   //--------------------------------
 
-  function token2TokenCalculate(address sellToken, address buyToken, uint amount) external view returns(uint rt) {
-    checkCall();
-    uint pions = tokenIndexes.getTradingNode(sellToken).toNative(amount);
-    uint buyTokens = tokenIndexes.getTradingNode(buyToken).toNonNative(pions);
-    return buyTokens;
-  }
-
-  //circulating pions
-  function token2TokenGetPionAmount(address sellToken) external view returns(uint rt) {
-    checkCall();
-    return tokenIndexes.getTradingNode(sellToken).getTotalSellActiveAmount();
-  }
-
-  //circulating tokens
-  function token2TokenGetTokenAmount(address buyToken) external view returns(uint rt) {
-    checkCall();
-    return tokenIndexes.getTradingNode(buyToken).getTotalBuyActiveAmount();
-  }
-
-  function getCurrentIndex(address forToken) external view returns(uint rt) {
-    checkCall();
-    return tokenIndexes.getCurrentIndex(forToken);
-  }
-
-//   function extraFunction(address forToken, address[] memory inAddress, uint[] memory inUint) public returns(bool rt) {
-//     checkCall();
-//     tokenIndexes.extraFunction(forToken, inAddress, inUint);
-//     return true;
-//   }
+ 
+ 
 
   //--------------------------------START INDEX MANAGEMENT-------------
 
