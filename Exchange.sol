@@ -57,27 +57,11 @@ function withdrawAll(address tokenAddress, address userAddress, uint priceIndex)
 function withdrawBuy(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
 function withdrawSell(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
 function getTradeData(address tokenAddress, uint tradePlaces) external virtual view returns(uint[] memory rt);
-function getTradingNode(address tokenAddress, uint priceIndex) external virtual view returns(TradingNode rt);
-function getTradingNode(address tokenAddress) external virtual view returns(TradingNode rt);
-function getCurrentIndex(address tokenAddress) external virtual view returns(uint rt);
-function extraFunction(address tokenAddress, address[] memory inAddress, uint[] memory inUint) public virtual returns(bool rt);
 function getWithdrawAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
 function getWithdrawAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
 }
 
-abstract contract TradingNode {
-  function getWithdrawAmountBuy(address usrAddress) external virtual view returns(uint rt);
 
-  function getWithdrawAmountSell(address usrAddress) external virtual view returns(uint rt);
-
-  function toNative(uint nonNativeAmount) public virtual view returns(uint rt);
-
-  function toNonNative(uint nonNativeAmount) public virtual view returns(uint rt);
-
-  function getTotalBuyActiveAmount() external virtual view returns(uint rt);
-
-  function getTotalSellActiveAmount() external virtual view returns(uint rt);
-}
 
 contract Exchange is IndexManagement {
     
@@ -168,13 +152,13 @@ contract Exchange is IndexManagement {
 
   function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
+    // if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
     return tokenIndexes.getWithdrawAmountBuy( forToken,  userAddress, priceIndex);
   }
 
   function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
     checkCall();
-    if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
+    // if(tokenIndexes.getTradingNode(forToken)==tokenIndexes.getTradingNode(address(0))){return 0;}
     return tokenIndexes.getWithdrawAmountSell( forToken,  userAddress, priceIndex);
   }
   //--------------------------------
