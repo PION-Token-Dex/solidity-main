@@ -3,67 +3,7 @@
 
 pragma solidity ^ 0.7 .0;
 
-contract IndexManagement {
- //index has useraddress, tokenaddress, priceindex, type
- //type is live(buy sell withdraw) or done
-    
-    
-struct Indexes{
-    address tokenAddress;
-    address priceIndex;
-    uint typeOf;
-}    
-
-mapping(address => Indexes) internal userIndexes; //user address, indexes
-
-
-
-    
-    
-//   struct Indexes {
-//     mapping(uint => address) tokenMap; //id, tokenAddress
-//     mapping(uint => uint) priceIndex; //id, priceIndex
-//     uint lastId;
-//     uint lastActiveIdBottom;
-//   }
-
-//   mapping(address => Indexes) internal userIndexes; //user address, indexes
-
-//   function addIndex_(address userAddress, address tokenAddress, uint priceIndex) internal returns(bool rt) {
-//     uint lastId = userIndexes[userAddress].lastId;
-//     ++lastId;
-//     userIndexes[userAddress].lastId = lastId;
-//     userIndexes[userAddress].tokenMap[lastId] = tokenAddress;
-//     userIndexes[userAddress].priceIndex[lastId] = priceIndex;
-//     return true;
-//   }
-
-//   function moveLastActiveIndex(address userAddress, uint toIndex) internal {
-//     userIndexes[userAddress].lastActiveIdBottom = toIndex;
-//   }
-  
-
-
-//   function getTokenPriceIndexes(address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt) {
-//     uint[] memory ret = new uint[](maxIndexes);
-//     uint from = userIndexes[userAddress].lastActiveIdBottom;
-//     uint to = userIndexes[userAddress].lastId;
-//     uint t = 0;
-//     uint cnt = 0;
-//     for (; from <= to; from++) {
-//       if (cnt == 10000) break;
-//       if (userIndexes[userAddress].tokenMap[from] == tokenAddress) {
-//         ret[t] = userIndexes[userAddress].priceIndex[from];
-//         ++t;
-//         if (t == maxIndexes) break;
-//       }
-//       ++cnt;
-//     }
-//     return ret;
-//   }
-
-}
-
+ 
 
 abstract contract ActiveIndexes {
 function buy(address tokenAddress, address userAddress, uint priceIndex, uint amount) external virtual returns(bool rt);
@@ -80,11 +20,14 @@ function getAmountSell(address tokenAddress, address usrAddress, uint priceIndex
 }
 
 
+abstract contract TokenTransfer {
+  function allowance(address owner, address spender) virtual external view returns(uint256);
+  function transferFrom(address sender, address recipient, uint256 amount) virtual external returns(bool);
+  function balanceOf(address account) virtual external view returns(uint256);
+  function transfer(address recipient, uint256 amount) virtual external returns(bool);
+}
 
-contract Exchange is IndexManagement {
-    
- 
-    
+contract Exchange {
 
   ActiveIndexes private tokenIndexes;
 
@@ -114,7 +57,6 @@ contract Exchange is IndexManagement {
     checkCall();
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
     withdrawAll(forToken, userAddress, priceIndex);
-    // registerIndexAdd( forToken,  userAddress,  priceIndex);
     return true;
   }
 
@@ -193,46 +135,18 @@ contract Exchange is IndexManagement {
   
   //--------------------------------
 
+  function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
+    TokenTransfer tok = TokenTransfer(tokenAddress);
+    require(tok.allowance(userAddress, address(this)) >= amount, "errfv");
+    tok.transferFrom(userAddress, address(this), amount);
+    return true;
+  }
+  
+    function sendTokenToUser(address tokenAddress, address userAddress, uint amount) public returns(bool rt) {
+    TokenTransfer tok = TokenTransfer(tokenAddress);
+    require(tok.balanceOf(userAddress) >= amount);
+    tok.transfer(userAddress, amount);
+    return true;
+  }
  
- 
-
-  //--------------------------------START INDEX MANAGEMENT-------------
-
-//   function findNextWithdrawIndex(address userAddress) public view returns(uint rt) {
-//     uint ret = userIndexes[userAddress].lastActiveIdBottom;
-//     uint to = userIndexes[userAddress].lastId;
-//     if(ret==to){return ret;}
-//     uint cnt=0;
-//     for (; ret < to; ret++) {
-//       address forToken = userIndexes[userAddress].tokenMap[ret];
-//       uint priceIndex = userIndexes[userAddress].priceIndex[ret];
-//       uint withdrawBuyData = getWithdrawBuyData(forToken, userAddress, priceIndex);
-//       uint withdrawSellData = getWithdrawSellData(forToken, userAddress, priceIndex);
-//       if (withdrawBuyData > 0 || withdrawSellData > 0) {
-//         break;
-//       }
-//       if(cnt==10000){
-//           break;
-//       }
-//       cnt++;
-//     }
-//     return ret;
-//   }
-
-//   function registerIndexAdd(address forToken, address userAddress, uint priceIndex) private {
-//     addIndex_(userAddress, forToken, priceIndex);
-//     addIndex_(userAddress, pionAdress, priceIndex);
-//   }
-
-//   function registerIndexWithdraw(address userAddress) public view returns(uint rt){
-//       uint indx = findNextWithdrawIndex(userAddress);
-//     //   if(lastActiveIndex!=userIndexes[userAddress].lastActiveIdBottom){
-//     // moveLastActiveIndex(userAddress, findNextWithdrawIndex(userAddress));
-//     //   }
-//     return indx;
-//   }
-
-
-  //--------------------------------END INDEX MANAGEMENT---------------
-
 }
