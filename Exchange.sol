@@ -66,7 +66,7 @@ contract Exchange {
     checkCall();
     require(depositTokenToExchange(forToken, userAddress, amount));
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
-    withdrawAll(forToken, userAddress, priceIndex);
+    require(withdrawAll(forToken, userAddress, priceIndex));
     return true;
   }
 
@@ -74,14 +74,14 @@ contract Exchange {
     checkCall();
     require(depositTokenToExchange(pionAdress, userAddress, amount));
     require(tokenIndexes.sell(forToken, userAddress, priceIndex, amount));
-    withdrawAll(forToken, userAddress, priceIndex);
+    require(withdrawAll(forToken, userAddress, priceIndex));
     return true;
   }
 
   function cancelOrders(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
     checkCall();
-    tokenIndexes.cancelAt(forToken, userAddress, priceIndex);
-    withdrawAll(forToken, userAddress, priceIndex);
+    require(tokenIndexes.cancelAt(forToken, userAddress, priceIndex));
+    require(withdrawAll(forToken, userAddress, priceIndex));
     return true;
   }
 
@@ -100,20 +100,20 @@ contract Exchange {
     }
 
     if (withdrawSellData > 0 || withdrawBuyData > 0) {
-      tokenIndexes.withdrawAll(forToken, userAddress, priceIndex);
+      require(tokenIndexes.withdrawAll(forToken, userAddress, priceIndex));
     }
     return true;
   }
 
   function withdrawBuy(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
     checkCall();
-    tokenIndexes.withdrawBuy(forToken, userAddress, priceIndex, amount);
+    require(tokenIndexes.withdrawBuy(forToken, userAddress, priceIndex, amount));
     return true;
   }
 
   function withdrawSell(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
     checkCall();
-    tokenIndexes.withdrawSell(forToken, userAddress, priceIndex, amount);
+    require(tokenIndexes.withdrawSell(forToken, userAddress, priceIndex, amount));
     return true;
   }
 
