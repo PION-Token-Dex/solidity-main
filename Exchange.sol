@@ -63,22 +63,22 @@ function getWithdrawAmountSell(address tokenAddress, address usrAddress, uint pr
 
 
 
-contract Exchange is IndexManagement {
+contract Exchange {
     
  
     
 
   ActiveIndexes private tokenIndexes;
 
-  address private pionAdress = address(12345);
+  address private pionAdress;
   address private activeIndexesAddress;
 
-//   constructor(address exchangesAddress_) {
-//     exchangesAddress = exchangesAddress_;
-//   }
+  constructor(address pionAdress_) {
+    pionAdress = pionAdress_;
+  }
 
   function checkCall() private view {
-    //require(msg.sender == exchangesAddress || msg.sender == address(this));
+    //require(msg.sender == activeIndexesAddress || msg.sender == address(this));
   }
 
   function getExchangeAddress() public view returns(address rt) {
@@ -92,14 +92,16 @@ contract Exchange is IndexManagement {
   }
 
   function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
-    //    require(depositTokenToExchange(forToken, userAddress, amount));
-    // checkCall();
+    //require(depositTokenToExchange(forToken, userAddress, amount));
+    checkCall();
     require(tokenIndexes.buy(forToken, userAddress, priceIndex, amount));
     withdrawAll(forToken, userAddress, priceIndex);
     return true;
   }
 
   function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    //require(depositTokenToExchange(pionAdress, userAddress, amount));
+
     checkCall();
     require(tokenIndexes.sell(forToken, userAddress, priceIndex, amount));
     withdrawAll(forToken, userAddress, priceIndex);
