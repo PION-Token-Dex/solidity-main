@@ -17,13 +17,13 @@ abstract contract ActiveIndexes {
 
   function getTradeData(address tokenAddress, uint tradePlaces) external virtual view returns(uint[] memory rt);
 
-  function getWithdrawAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+  function getWithdrawAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) external virtual view returns(uint rt);
 
-  function getWithdrawAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+  function getWithdrawAmountSell(address tokenAddress, address usrAddress, uint priceIndex) external virtual view returns(uint rt);
 
-  function getAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+  function getAmountBuy(address tokenAddress, address usrAddress, uint priceIndex) external virtual view returns(uint rt);
 
-  function getAmountSell(address tokenAddress, address usrAddress, uint priceIndex) public virtual view returns(uint rt);
+  function getAmountSell(address tokenAddress, address usrAddress, uint priceIndex) external virtual view returns(uint rt);
 }
 
 abstract contract TokenTransfer {
