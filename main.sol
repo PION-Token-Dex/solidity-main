@@ -2,7 +2,7 @@
 import "SafeMath.sol";
 import "Context.sol";
 import "Ownable.sol";
-import "Exchanges.sol";
+import "Exchange.sol";
 
 pragma solidity ^ 0.7 .0;
 
@@ -39,7 +39,7 @@ contract PION is Context, IERC20, Ownable {
   string public _name;
   string public _symbol;
   uint8 public _decimals;
-  Exchanges private exchanges;
+  Exchange private exchange;
 
   //----------------------------------------------------------
   uint public rewardPerBlock = 50000000000000000000;
@@ -53,74 +53,73 @@ contract PION is Context, IERC20, Ownable {
     _symbol = "PION";
     _decimals = 18;
     _currentSupply = 0;
-    exchanges = new Exchanges(address(this));
+    exchange = new Exchange(address(this));
   }
   //----------------------------------------------------------
 
   //--------------Start Exhanges Calls--------------------------------------------
-  function isExchangeVersionAllowed(uint exchangeVersion) external view returns(bool rt) {
-    return exchanges.isExchangeVersionAllowed(exchangeVersion);
+
+  function getExchangeAddress() external view returns(address rt) {
+    return exchange.getExchangeAddress();
   }
 
-  function getCurrentExchangeVersion() external view returns(uint rt) {
-    return exchanges.getCurrentExchangeVersion();
+  function setActiveIndexAddress(address activeIndexAddress_) external onlyOwner {
+    exchange.setActiveIndexAddress(activeIndexAddress_);
   }
 
-  function getExchangeAddress(uint atExchangeVersion) public view returns(address rt) {
-    return exchanges.getExchangeAddress(atExchangeVersion);
-  }
-  
-  function getExchangesAddress() public view returns(address rt) {
-    return exchanges.getExchangesAddress();
+  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    require(exchange.buyPion(forToken, userAddress, priceIndex, amount));
+    return true;
+
   }
 
-  function setActiveIndexAddress(uint atExchangeVersion, address activeIndexAddress) external onlyOwner {
-    exchanges.setActiveIndexAddress(atExchangeVersion, activeIndexAddress);
+  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    require(exchange.sellPion(forToken, userAddress, priceIndex, amount));
+    return true;
+
   }
 
-  function depositTokenToExchange(address tokenAddress, address userAddress, uint amount) external returns(bool rt) {
-    return exchanges.depositTokenToExchange(tokenAddress, userAddress, amount);
+  function cancelOrders(address forToken, address userAddress, uint priceIndex) external returns(bool rt) {
+    require(exchange.cancelOrders(forToken, userAddress, priceIndex));
+    return true;
   }
 
-  function sendTokenToUser(address tokenAddress, address userAddress, uint amount) external returns(bool rt) {
-    return exchanges.sendTokenToUser(tokenAddress, userAddress, amount);
+  function withdrawAll(address forToken, address userAddress, uint priceIndex) public returns(bool rt) {
+    require(exchange.withdrawAll(forToken, userAddress, priceIndex));
+    return true;
   }
 
-  function buyPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
-    return exchanges.buyPion(forToken, userAddress, priceIndex, amount, atExchangeVersion);
+  function withdrawBuy(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    require(exchange.withdrawBuy(forToken, userAddress, priceIndex, amount));
+    return true;
   }
 
-  function sellPion(address forToken, address userAddress, uint priceIndex, uint amount, uint atExchangeVersion) external returns(bool rt) {
-    return exchanges.sellPion(forToken, userAddress, priceIndex, amount, atExchangeVersion);
+  function withdrawSell(address forToken, address userAddress, uint priceIndex, uint amount) external returns(bool rt) {
+    require(exchange.withdrawSell(forToken, userAddress, priceIndex, amount));
+    return true;
   }
 
-  function cancelAllTradesAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) external returns(bool rt) {
-    return exchanges.cancelAllTradesAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
+  function getTradeData(address forToken, uint tradePlaces) external view returns(uint[] memory rt) {
+    return (exchange.getTradeData(forToken, tradePlaces));
   }
 
-  function withdrawAllAtIndex(address forToken, address userAddress, uint priceIndex, uint atExchangeVersion) external returns(bool rt) {
-    return exchanges.withdrawAllAtIndex(forToken, userAddress, priceIndex, atExchangeVersion);
+  function getWithdrawBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    return (exchange.getWithdrawBuyData(forToken, userAddress, priceIndex));
   }
 
-  function token2TokenSwap(address sellToken, address buyToken, address userAddress, uint atExchangeVersion, uint amount) external returns(bool rt) {
-    return exchanges.token2TokenSwap(sellToken, buyToken, userAddress, atExchangeVersion, amount);
+  function getWithdrawSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    return (exchange.getWithdrawSellData(forToken, userAddress, priceIndex));
   }
 
-  function getTokenPriceIndexes(uint atExchangeVersion, address userAddress, address tokenAddress, uint maxIndexes) external view returns(uint[] memory rt) {
-    require(maxIndexes <= 2000);
-    return exchanges.getTokenPriceIndexes(atExchangeVersion, userAddress, tokenAddress, maxIndexes);
+  function getBuyData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    return (exchange.getBuyData(forToken, userAddress, priceIndex));
   }
 
-  function extraFunction(uint atExchangeVersion, address tokenAddress, address[] memory inAddress, uint[] memory inUint) external returns(bool rt) {
-    return exchanges.extraFunction(atExchangeVersion, tokenAddress, inAddress, inUint);
-  }
-  
-  function setNewExchange() external onlyOwner{
-      exchanges.setNewExchange();
+  function getSellData(address forToken, address userAddress, uint priceIndex) public view returns(uint rt) {
+    return (exchange.getSellData(forToken, userAddress, priceIndex));
   }
 
   //--------------End Exhanges Calls----------------------------------------------
-
 
   function claimTokens() override external returns(bool) {
     claimTokensTo(msg.sender);
@@ -150,7 +149,7 @@ contract PION is Context, IERC20, Ownable {
     _burn(fromAddress, amount);
   }
 
-  function setRewardPerBlock(uint rewardPerBlock_) onlyOwner external{
+  function setRewardPerBlock(uint rewardPerBlock_) onlyOwner external {
     rewardPerBlock = rewardPerBlock_;
   }
 
